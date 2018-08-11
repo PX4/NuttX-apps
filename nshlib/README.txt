@@ -98,7 +98,7 @@ Conditional Command Execution
   command line but is primarily intended for use within NSH scripts
   (see the sh command).  The syntax is as follows:
 
-    if <cmd>
+    if [!] <cmd>
     then
       [sequence of <cmd>]
     else
