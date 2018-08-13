@@ -454,7 +454,8 @@ static int nsh_saveresult(FAR struct nsh_vtbl_s *vtbl, bool result)
   if (np->np_iestate[np->np_iendx].ie_state == NSH_ITEF_IF)
     {
       np->np_fail = false;
-      np->np_iestate[np->np_iendx].ie_ifcond = result;
+      np->np_iestate[np->np_iendx].ie_ifcond =
+        np->np_iestate[np->np_iendx].ie_inverted ^ result;
       return OK;
     }
   else
@@ -1693,6 +1694,7 @@ static int nsh_itef(FAR struct nsh_vtbl_s *vtbl, FAR char **ppcmd,
   FAR struct nsh_parser_s *np = &vtbl->np;
   FAR char *cmd = *ppcmd;
   bool disabled;
+  bool inverted_result = false;
 
   if (cmd)
     {
@@ -1707,6 +1709,20 @@ static int nsh_itef(FAR struct nsh_vtbl_s *vtbl, FAR char **ppcmd,
             {
               nsh_output(vtbl, g_fmtarginvalid, "if");
               goto errout;
+            }
+
+          /* Check for inverted logic */
+          if (strcmp(*ppcmd, "!") == 0)
+            {
+              inverted_result = true;
+
+              /* Get the next cmd */
+              *ppcmd = nsh_argument(vtbl, saveptr, memlist, 0);
+              if (!*ppcmd)
+                {
+                  nsh_output(vtbl, g_fmtarginvalid, "if");
+                  goto errout;
+                }
             }
 
           /* Verify that "if" is valid in this context */
@@ -1732,6 +1748,7 @@ static int nsh_itef(FAR struct nsh_vtbl_s *vtbl, FAR char **ppcmd,
           np->np_iestate[np->np_iendx].ie_state    = NSH_ITEF_IF;
           np->np_iestate[np->np_iendx].ie_disabled = disabled;
           np->np_iestate[np->np_iendx].ie_ifcond   = false;
+          np->np_iestate[np->np_iendx].ie_inverted = inverted_result;
         }
 
       /* Check if the token is "then" */
@@ -1821,6 +1838,7 @@ errout:
   np->np_iestate[0].ie_state    = NSH_ITEF_NORMAL;
   np->np_iestate[0].ie_disabled = false;
   np->np_iestate[0].ie_ifcond   = false;
+  np->np_iestate[0].ie_inverted = false;
   return ERROR;
 }
 #endif
