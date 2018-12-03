@@ -1,0 +1,19 @@
+#
+# For a description of the syntax of this configuration file,
+# see the file kconfig-language.txt in the NuttX tools repository.
+#
+
+source "$APPSDIR/builtin/Kconfig"
+source "$APPSDIR/canutils/Kconfig"
+source "$APPSDIR/examples/Kconfig"
+source "$APPSDIR/fsutils/Kconfig"
+source "$APPSDIR/gpsutils/Kconfig"
+source "$APPSDIR/graphics/Kconfig"
+source "$APPSDIR/interpreters/Kconfig"
+source "$APPSDIR/modbus/Kconfig"
+source "$APPSDIR/netutils/Kconfig"
+source "$APPSDIR/nshlib/Kconfig"
+source "$APPSDIR/platform/Kconfig"
+source "$APPSDIR/system/Kconfig"
+source "$APPSDIR/testing/Kconfig"
+source "$APPSDIR/wireless/Kconfig"

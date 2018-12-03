@@ -1,0 +1,14 @@
+#
+# For a description of the syntax of this configuration file,
+# see the file kconfig-language.txt in the NuttX tools repository.
+#
+
+menu "Graphics Support"
+source "$APPSDIR/graphics/NxWidgets/Kconfig"
+source "$APPSDIR/graphics/ft80x/Kconfig"
+source "$APPSDIR/graphics/littlevgl/Kconfig"
+source "$APPSDIR/graphics/pdcurs34/Kconfig"
+source "$APPSDIR/graphics/screenshot/Kconfig"
+source "$APPSDIR/graphics/tiff/Kconfig"
+source "$APPSDIR/graphics/traveler/Kconfig"
+endmenu # Graphics Support
