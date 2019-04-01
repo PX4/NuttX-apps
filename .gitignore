@@ -10,7 +10,6 @@ Make.dep
 core
 .gdbinit
 cscope.out
-/Kconfig
 /bin
 /exe
 /external

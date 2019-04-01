@@ -35,7 +35,70 @@
 ############################################################################
 
 if("${CONFIG_EXAMPLES_NETTEST}" STREQUAL "y")
+
+	set(CSRCS)
+
+	# Basic TCP networking test
+	if(${CONFIG_EXAMPLES_NETTEST_INIT} MATCHES "y")
+		list(APPEND CSRCS nettest_netinit.c)
+	endif()
+
+	# Target 1 Files
+	if(${CONFIG_EXAMPLES_NETTEST_LOOPBACK} MATCHES "y")
+		list(APPEND CSRCS nettest_server.c nettest_client.c)
+	elseif(${CONFIG_EXAMPLES_NETTEST_SERVER} MATCHES "y")
+		list(APPEND CSRCS nettest_server.c)
+	else()
+		list(APPEND CSRCS nettest_client.c)
+	endif()
+
+	# Target 2
+	if(${CONFIG_EXAMPLES_NETTEST_TARGET2} MATCHES "y")
+		if(${CONFIG_EXAMPLES_NETTEST_SERVER1} MATCHES "y")
+			list(APPEND CSRCS nettest_client.c)
+		else()
+			list(APPEND CSRCS nettest_server.c)
+		endif()
+
+		nuttx_add_application(
+			APPLICATION
+				nettest
+			SOURCES
+				nettest_cmdline.c
+				nettest_target1.c
+				nettest_target2.c
+				${CSRCS}
+		)
+
+
+	endif()
+
+	if(${CONFIG_EXAMPLES_NETTEST_SERVER1} MATCHES "y")
+
+		nuttx_add_application(
+			APPLICATION
+				tcpserver
+			PRIORITY
+				100
+			STACK
+				2048
+			SOURCES
+				nettest_cmdline.c
+				nettest_target1.c
+				nettest_target2.c
+				${CSRCS}
+		)
+
+	endif()
+
+
 	nuttx_add_application(
 		APPLICATION
 			nettest
+		SOURCES
+			nettest_cmdline.c
+			nettest_target1.c
+			nettest_target2.c
+			${CSRCS}
+	)
 endif()

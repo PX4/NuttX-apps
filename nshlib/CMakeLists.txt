@@ -39,9 +39,11 @@ if("${CONFIG_NSH_LIBRARY}" STREQUAL "y")
 
 	# NSH Library
 
-	list(APPEND CSRCS nsh_init.c nsh_parse.c nsh_console.c nsh_script.c nsh_system.c)
-	list(APPEND CSRCS nsh_command.c nsh_fscmds.c nsh_ddcmd.c nsh_proccmds.c nsh_mmcmds.c)
-	list(APPEND CSRCS nsh_timcmds.c nsh_envcmds.c nsh_syscmds.c nsh_dbgcmds.c)
+	list(APPEND CSRCS
+		nsh_init.c nsh_parse.c nsh_console.c nsh_script.c nsh_system.c
+		nsh_command.c nsh_fscmds.c nsh_ddcmd.c nsh_proccmds.c nsh_mmcmds.c
+		nsh_timcmds.c nsh_envcmds.c nsh_syscmds.c nsh_dbgcmds.c
+	)
 
 	if("${CONFIG_NFILE_STREAMS}" STREQUAL "0")
 		list(APPEND CSRCS nsh_stdsession.c)
@@ -55,9 +57,7 @@ if("${CONFIG_NSH_LIBRARY}" STREQUAL "y")
 		endif()
 	endif()
 
-	if(NOT "${CONFIG_NFILE_DESCRIPTORS}" STREQUAL "0")
-		list(APPEND CSRCS nsh_fsutils.c)
-	endif()
+	list(APPEND CSRCS nsh_fsutils.c)
 
 	if("${CONFIG_NSH_BUILTIN_APPS}" STREQUAL "y")
 		list(APPEND CSRCS nsh_builtin.c)
