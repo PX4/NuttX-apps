@@ -1,0 +1,11 @@
+#
+# For a description of the syntax of this configuration file,
+# see the file kconfig-language.txt in the NuttX tools repository.
+#
+
+menu "Wireless Libraries and NSH Add-Ons"
+source "$APPSDIR/wireless/bluetooth/Kconfig"
+source "$APPSDIR/wireless/ieee802154/Kconfig"
+source "$APPSDIR/wireless/iwpan/Kconfig"
+source "$APPSDIR/wireless/wapi/Kconfig"
+endmenu # Wireless Libraries and NSH Add-Ons

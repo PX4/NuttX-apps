@@ -1,0 +1,10 @@
+#
+# For a description of the syntax of this configuration file,
+# see the file kconfig-language.txt in the NuttX tools repository.
+#
+
+menu "NxWidgets/NxWM"
+source "$APPSDIR/graphics/NxWidgets/UnitTests/Kconfig"
+source "$APPSDIR/graphics/NxWidgets/nxwidgets/Kconfig"
+source "$APPSDIR/graphics/NxWidgets/nxwm/Kconfig"
+endmenu # NxWidgets/NxWM
