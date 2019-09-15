@@ -37,7 +37,7 @@
 if("${CONFIG_EXAMPLES_TELNETD}" STREQUAL "y")
 	nuttx_add_application(
 		APPLICATION
-			examples_telnetd
+			telnetd
 		SRCS
 			telnetd.c
 	)

@@ -34,12 +34,9 @@
 ############################################################################
 
 if("${CONFIG_FSUTILS_MKFATFS}" STREQUAL "y")
-	nuttx_add_application(
-		APPLICATION
-			mkfatfs
-		SRCS
-			configfat.c
-			mkfatfs.c
-			writefat.c
+	nuttx_add_library(apps_fsutils_mkfatfs
+		configfat.c
+		mkfatfs.c
+		writefat.c
 	)
 endif()

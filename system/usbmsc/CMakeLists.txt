@@ -38,6 +38,8 @@ if("${CONFIG_SYSTEM_USBMSC}" STREQUAL "y")
 	nuttx_add_application(
 		APPLICATION
 			usbmsc
+		STACKSIZE
+			768
 		SRCS
 			usbmsc_main.c
 	)

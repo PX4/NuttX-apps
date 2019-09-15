@@ -36,23 +36,34 @@
 
 if("${CONFIG_BUILTIN}" STREQUAL "y")
 
-	#add_subdirectory(registry)
-
-	# combine all BDATLIST to builtin_list.h
-	get_property(bdatlist GLOBAL PROPERTY NUTTX_APP_BDATLIST)
-	#message(STATUS "registry: ${bdatlist}")
-	
-	# combine all PDATLIST to builtin_proto.h
-	get_property(pdatlist GLOBAL PROPERTY NUTTX_APP_PDATLIST)
-	#message(STATUS "registry: ${pdatlist}")
-
-	add_custom_command(
-		OUTPUT builtin_list.h builtin_proto.h
-		COMMAND touch builtin_list.h # TODO: combine all BDATLIST to builtin_list.h
-		COMMAND touch builtin_proto.h # TODO: combine all PDATLIST to builtin_proto.h
-	)
-
 	include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
+	# generate registry
+	get_property(nuttx_app_libs GLOBAL PROPERTY NUTTX_APP_LIBS)
+	set(builtin_list_string)
+	set(builtin_proto_string)
+	foreach(module ${nuttx_app_libs})
+
+		# builtin_list.h
+		#  Example:
+		#   { "hello", SCHED_PRIORITY_DEFAULT, 2048, hello_main },
+		#
+		get_target_property(APP_MAIN ${module} APP_MAIN)
+		get_target_property(APP_NAME ${module} APP_NAME)
+		get_target_property(APP_PRIORITY ${module} APP_PRIORITY)
+		get_target_property(APP_STACK ${module} APP_STACK)
+		set(builtin_list_string "${builtin_list_string}\{ \"${APP_NAME}\", ${APP_PRIORITY}, ${APP_STACK}, ${APP_MAIN} \},  \n")
+
+		# builtin_proto.h
+		#  Example:
+		#   int hello_main(int argc, char *argv[]);
+		set(builtin_proto_string "${builtin_proto_string}int ${APP_MAIN}(int argc, char *argv[]);\n")
+
+	endforeach()
+
+	configure_file(builtin_proto.h.in builtin_proto.h)
+	configure_file(builtin_list.h.in builtin_list.h)
+
 
 	nuttx_add_library(apps_builtin
 		builtin_forindex.c
@@ -62,5 +73,9 @@ if("${CONFIG_BUILTIN}" STREQUAL "y")
 		builtin_list.h
 		builtin_proto.h
 	)
+
+	foreach(module ${nuttx_app_libs})
+		target_link_libraries(apps_builtin PRIVATE ${module})
+	endforeach()
 
 endif()

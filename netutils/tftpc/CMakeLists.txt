@@ -38,13 +38,10 @@ if("${CONFIG_NETUTILS_TFTPC}" STREQUAL "y")
 	if("${CONFIG_NET_UDP}" STREQUAL "y")
 		if(NOT "${CONFIG_NFILE_DESCRIPTORS}" STREQUAL "0")
 
-			nuttx_add_application(
-				APPLICATION
-					tftpc
-				SRCS
-					tftpc_get.c
-					tftpc_put.c
-					tftpc_packets.c
+			nuttx_add_library(apps_netutils_tftpc
+				tftpc_get.c
+				tftpc_put.c
+				tftpc_packets.c
 			)
 
 		endif()

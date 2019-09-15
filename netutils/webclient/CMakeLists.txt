@@ -37,11 +37,8 @@ if("${CONFIG_NETUTILS_WEBCLIENT}" STREQUAL "y")
 
 
 	if("${CONFIG_NET_TCP}" STREQUAL "y")
-		nuttx_add_application(
-			APPLICATION
-				webclient
-			SRCS
-				webclient.c
+		nuttx_add_library(apps_netutils_webclient
+			webclient.c
 		)
 	endif()
 

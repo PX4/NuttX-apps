@@ -1,9 +1,11 @@
 
-include(nuttx_add_application)
+
+include(cmake/nuttx_add_application.cmake)
 
 add_library(apps INTERFACE)
 
 include_directories(include)
+
 #add_subdirectory(canutils)
 add_subdirectory(examples)
 add_subdirectory(fsutils)

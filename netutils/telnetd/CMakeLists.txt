@@ -36,11 +36,8 @@
 if("${CONFIG_NETUTILS_TELNETD}" STREQUAL "y")
 
 	if("${CONFIG_NET_TCP}" STREQUAL "y")
-		nuttx_add_application(
-			APPLICATION
-				telnetd
-			SRCS
-				telnetd_daemon.c
+		nuttx_add_library(apps_netutils_telnetd
+			telnetd_daemon.c
 		)
 	endif()
 
