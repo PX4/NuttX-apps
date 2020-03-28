@@ -70,6 +70,8 @@
 #  define AF_FAMILY AF_LOCAL
 #elif defined(CONFIG_NET_PKT)
 #  define AF_FAMILY AF_PACKET
+#elif defined(CONFIG_NET_CAN)
+#  define AF_FAMILY AF_CAN
 #elif defined(CONFIG_NET_IEEE802154)
 #  define AF_FAMILY AF_IEEE802154
 #elif defined(CONFIG_NET_BLUETOOTH)
