@@ -71,6 +71,9 @@
 #elif defined(CONFIG_NET_PKT)
 #  define PF_FAMILY  PF_PACKET
 #  define AF_FAMILY  AF_PACKET
+#elif defined(CONFIG_NET_CAN)
+#  define PF_FAMILY  PF_CAN
+#  define AF_FAMILY  AF_CAN
 #elif defined(CONFIG_NET_IEEE802154)
 #  define PF_FAMILY  PF_IEEE802154
 #  define AF_FAMILY  AF_IEEE802154

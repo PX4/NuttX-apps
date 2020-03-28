@@ -1,0 +1,14 @@
+#
+# For a description of the syntax of this configuration file,
+# see the file kconfig-language.txt in the NuttX tools repository.
+#
+
+config CANUTILS_CANSEND
+	tristate "SocketCAN cansend tool"
+	default n
+	depends on NET_CAN
+	---help---
+		Enable the SocketCAN cansend tool
+
+if CANUTILS_CANSEND
+endif
