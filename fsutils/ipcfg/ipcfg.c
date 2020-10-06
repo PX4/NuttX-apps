@@ -38,9 +38,9 @@
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
-
-#define MAX_LINESIZE  80
-#define MAX_IPv4PROTO IPv4PROTO_FALLBACK
+#define IPCFG_VERSION  0  /* Increment this if the data/structure changes */
+#define MAX_LINESIZE   80
+#define MAX_IPv4PROTO  IPv4PROTO_FALLBACK
 
 /* Values for the record type field */
 
@@ -53,6 +53,7 @@
 struct ipcfg_header_s
 {
   uint8_t next;         /* Offset to the next IP configuration record */
+  uint8_t version;
   sa_family_t type;     /* Must be AF_INET */
 };
 
@@ -383,7 +384,7 @@ int ipcfg_read(FAR const char *netdev, FAR void *ipcfg, sa_family_t af)
 
   /* Verify the header.  Only a single IPv4 header is anticipated */
 
-  if (hdr.next != 0 || hdr.type != AF_INET)
+  if (hdr.version != IPCFG_VERSION || hdr.next != 0 || hdr.type != AF_INET)
     {
       ret = -EINVAL;
       fprintf(stderr, "ERROR: Bad header: {%u,%u}\n",
@@ -570,8 +571,9 @@ int ipcfg_write(FAR const char *netdev, FAR const void *ipcfg,
 
   /* Write the file header */
 
-  hdr.next = 0;
-  hdr.type = AF_INET;
+  hdr.next    = 0;
+  hdr.type    = AF_INET;
+  hdr.version = IPCFG_VERSION;
 
   nwritten = write(fd, &hdr, sizeof(struct ipcfg_header_s));
   if (nwritten < 0)
