@@ -73,7 +73,7 @@ if NETINIT_THREAD
 config NETINIT_MONITOR
 	bool "Monitor link state"
 	default n
-	depends on ARCH_PHY_INTERRUPT && NETDEV_PHY_IOCTL && NET_UDP
+	depends on (ARCH_PHY_INTERRUPT || ARCH_PHY_POLLED) && NETDEV_PHY_IOCTL && NET_UDP
 	---help---
 		By default the net initialization thread will bring-up the network
 		then exit, freeing all of the resources that it required.  This is a
@@ -87,10 +87,38 @@ config NETINIT_MONITOR
 		required for network initialization are never released.
 
 if NETINIT_MONITOR
+config NETINIT_ESTABLISH_POLL_RATE
+	int "The poll rate in seconds, to check for link establishment."
+	default 2
+	depends on !ARCH_PHY_INTERRUPT && ARCH_PHY_POLLED
+	---help---
+		The network monitor will check the PHY link state every
+		NETINIT_ESTABLISH_POLL_RATE seconds for link establishment.
+
+config NETINIT_LOSS_POLL_RATE
+	int "The poll rate in seconds, to check for link loss."
+	default 3
+	depends on !ARCH_PHY_INTERRUPT && ARCH_PHY_POLLED
+	---help---
+		The network monitor will check the PHY link state every
+		NETINIT_LOSS_POLL_RATE seconds for link loss.
+
+config NETINIT_DHCP_FALLBACK
+	int "The number of failed DHCP attempts to fall back to using static settings"
+	default 5
+	depends on NETINIT_DHCPC && !ARCH_PHY_INTERRUPT && ARCH_PHY_POLLED && FSUTILS_IPCFG
+	---help---
+		When the network monitor is used with FSUTILS_IPCFG if, the
+		the BOOTPROTO_FALLBACK is the active protocol. NETINIT_DHCP_FALLBACK will
+		be used as the number of times, DHCP will be be attempted before
+		falling back to using the static settings. The time will be roughly
+		NETINIT_LOSS_POLL_RATE * NETINIT_DHCP_FALLBACK seconds.
+		Setting this value to 0, will disable this feature.
 
 config NETINIT_SIGNO
 	int "Notification signal number"
 	default 18
+	depends on ARCH_PHY_INTERRUPT && !ARCH_PHY_POLLED
 	---help---
 		The network monitor logic will receive signals when there is any
 		change in the link status.  This setting may be used to customize
