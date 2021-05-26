@@ -91,6 +91,7 @@ struct trace_dump_context_s
 {
   struct trace_dump_cpu_context_s cpu[NCPUS];
   FAR struct trace_dump_task_context_s *task;
+  int notefd;
 };
 
 /****************************************************************************
@@ -125,11 +126,14 @@ static void note_ioctl(int cmd, unsigned long arg)
  * Name: trace_dump_init_context
  ****************************************************************************/
 
-static void trace_dump_init_context(FAR struct trace_dump_context_s *ctx)
+static void trace_dump_init_context(FAR struct trace_dump_context_s *ctx,
+                                   int fd)
 {
   int cpu;
 
   /* Initialize the trace dump context */
+
+  ctx->notefd = fd;
 
   for (cpu = 0; cpu < NCPUS; cpu++)
     {
@@ -222,6 +226,20 @@ FAR static struct trace_dump_task_context_s *get_task_context(pid_t pid,
       (*tctxp)->pid = pid;
       (*tctxp)->syscall_nest = 0;
       (*tctxp)->name[0] = '\0';
+
+#if CONFIG_DRIVER_NOTERAM_TASKNAME_BUFSIZE > 0
+        {
+          struct noteram_get_taskname_s tnm;
+          int res;
+
+          tnm.pid = pid;
+          res = ioctl(ctx->notefd, NOTERAM_GETTASKNAME, (unsigned long)&tnm);
+          if (res == 0)
+            {
+              copy_task_name((*tctxp)->name, tnm.taskname);
+            }
+        }
+#endif
     }
 
   return *tctxp;
@@ -277,7 +295,7 @@ static void trace_dump_header(FAR FILE *out,
 
   pid = ctx->cpu[cpu].current_pid;
 
-  fprintf(out, "%8s-%-3u [%d] %3u.%09u: ",
+  fprintf(out, "%8s-%-3u [%d] %3" PRIu32 ".%09" PRIu32 ": ",
           get_task_name(pid, ctx), get_pid(pid), cpu,
 #ifdef CONFIG_SCHED_INSTRUMENTATION_HIRES
           sec, nsec
@@ -489,11 +507,11 @@ static int trace_dump_one(FAR FILE *out,
 #endif
               if (i == 0)
                 {
-                  fprintf(out, "arg%d: 0x%x", i, arg);
+                  fprintf(out, "arg%d: 0x%" PRIxPTR, i, arg);
                 }
               else
                 {
-                  fprintf(out, ", arg%d: 0x%x", i, arg);
+                  fprintf(out, ", arg%d: 0x%" PRIxPTR, i, arg);
                 }
             }
 
@@ -638,7 +656,7 @@ int trace_dump(FAR FILE *out)
       return ERROR;
     }
 
-  trace_dump_init_context(&ctx);
+  trace_dump_init_context(&ctx, fd);
 
   /* Read and output all notes */
 

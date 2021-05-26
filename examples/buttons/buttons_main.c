@@ -1,5 +1,5 @@
 /****************************************************************************
- * examples/buttons/buttons_main.c
+ * apps/examples/buttons/buttons_main.c
  *
  *   Copyright (C) 2016-2017 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -55,20 +55,20 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
-#ifndef CONFIG_BUTTONS
-#  error "CONFIG_BUTTONS is not defined in the configuration"
+#ifndef CONFIG_INPUT_BUTTONS
+#  error "CONFIG_INPUT_BUTTONS is not defined in the configuration"
 #endif
 
-#ifndef CONFIG_BUTTONS_NPOLLWAITERS
-#  define CONFIG_BUTTONS_NPOLLWAITERS 2
+#ifndef CONFIG_INPUT_BUTTONS_NPOLLWAITERS
+#  define CONFIG_INPUT_BUTTONS_NPOLLWAITERS 2
 #endif
 
 #ifndef CONFIG_EXAMPLES_BUTTONS_SIGNO
 #  define CONFIG_EXAMPLES_BUTTONS_SIGNO 13
 #endif
 
-#ifndef CONFIG_BUTTONS_POLL_DELAY
-#  define CONFIG_BUTTONS_POLL_DELAY 1000
+#ifndef CONFIG_INPUT_BUTTONS_POLL_DELAY
+#  define CONFIG_INPUT_BUTTONS_POLL_DELAY 1000
 #endif
 
 #ifndef CONFIG_EXAMPLES_BUTTONS_NAME0
@@ -158,7 +158,7 @@ static bool g_button_daemon_started;
 static int button_daemon(int argc, char *argv[])
 {
 #ifdef CONFIG_EXAMPLES_BUTTONS_POLL
-  struct pollfd fds[CONFIG_BUTTONS_NPOLLWAITERS];
+  struct pollfd fds[CONFIG_INPUT_BUTTONS_NPOLLWAITERS];
 #endif
 
 #ifdef CONFIG_EXAMPLES_BUTTONS_SIGNAL
@@ -186,7 +186,7 @@ static int button_daemon(int argc, char *argv[])
   /* Open the BUTTON driver */
 
   printf("button_daemon: Opening %s\n", CONFIG_EXAMPLES_BUTTONS_DEVPATH);
-  fd = open(CONFIG_EXAMPLES_BUTTONS_DEVPATH, O_RDONLY|O_NONBLOCK);
+  fd = open(CONFIG_EXAMPLES_BUTTONS_DEVPATH, O_RDONLY | O_NONBLOCK);
   if (fd < 0)
     {
       int errcode = errno;
@@ -207,7 +207,8 @@ static int button_daemon(int argc, char *argv[])
       goto errout_with_fd;
     }
 
-  printf("button_daemon: Supported BUTTONs 0x%02x\n", (unsigned int)supported);
+  printf("button_daemon: Supported BUTTONs 0x%02x\n",
+         (unsigned int)supported);
 
 #ifdef CONFIG_EXAMPLES_BUTTONS_SIGNAL
   /* Define the notifications events */
@@ -229,6 +230,10 @@ static int button_daemon(int argc, char *argv[])
              errcode);
       goto errout_with_fd;
     }
+
+  /* Ignore the default signal action */
+
+  signal(CONFIG_EXAMPLES_BUTTONS_SIGNO, SIG_IGN);
 #endif
 
   /* Now loop forever, waiting BUTTONs events */
@@ -255,7 +260,8 @@ static int button_daemon(int argc, char *argv[])
       if (ret < 0)
         {
           int errcode = errno;
-          printf("button_daemon: ERROR: sigwaitinfo() failed: %d\n", errcode);
+          printf("button_daemon: ERROR: sigwaitinfo() failed: %d\n",
+                 errcode);
           goto errout_with_fd;
         }
 
@@ -265,7 +271,8 @@ static int button_daemon(int argc, char *argv[])
 #ifdef CONFIG_EXAMPLES_BUTTONS_POLL
       /* Prepare the File Descriptor for poll */
 
-      memset(fds, 0, sizeof(struct pollfd)*CONFIG_BUTTONS_NPOLLWAITERS);
+      memset(fds, 0,
+             sizeof(struct pollfd)*CONFIG_INPUT_BUTTONS_NPOLLWAITERS);
 
       fds[0].fd      = fd;
       fds[0].events  = POLLIN;
@@ -273,7 +280,8 @@ static int button_daemon(int argc, char *argv[])
       timeout        = false;
       pollin         = false;
 
-      ret = poll(fds, CONFIG_BUTTONS_NPOLLWAITERS, CONFIG_BUTTONS_POLL_DELAY);
+      ret = poll(fds, CONFIG_INPUT_BUTTONS_NPOLLWAITERS,
+                 CONFIG_INPUT_BUTTONS_POLL_DELAY);
 
       printf("\nbutton_daemon: poll returned: %d\n", ret);
       if (ret < 0)
@@ -286,7 +294,7 @@ static int button_daemon(int argc, char *argv[])
           printf("button_daemon: Timeout\n");
           timeout = true;
         }
-      else if (ret > CONFIG_BUTTONS_NPOLLWAITERS)
+      else if (ret > CONFIG_INPUT_BUTTONS_NPOLLWAITERS)
         {
           printf("button_daemon: ERROR poll reported: %d\n", errno);
         }
@@ -297,7 +305,7 @@ static int button_daemon(int argc, char *argv[])
 
       /* In any event, read until the pipe is empty */
 
-      for (i = 0; i < CONFIG_BUTTONS_NPOLLWAITERS; i++)
+      for (i = 0; i < CONFIG_INPUT_BUTTONS_NPOLLWAITERS; i++)
         {
           do
             {
@@ -310,12 +318,14 @@ static int button_daemon(int argc, char *argv[])
                     {
                       if ((fds[i].revents & POLLIN) != 0)
                         {
-                          printf("button_daemon: ERROR no read data[%d]\n", i);
+                          printf("button_daemon: ERROR no read data[%d]\n",
+                                 i);
                         }
                     }
                   else if (errno != EINTR)
                     {
-                      printf("button_daemon: read[%d] failed: %d\n", i, errno);
+                      printf("button_daemon: read[%d] failed: %d\n", i,
+                             errno);
                     }
 
                   nbytes = 0;
@@ -324,12 +334,16 @@ static int button_daemon(int argc, char *argv[])
                 {
                   if (timeout)
                     {
-                      printf("button_daemon: ERROR? Poll timeout, but data read[%d]\n", i);
-                      printf("               (might just be a race condition)\n");
+                      printf("button_daemon: ERROR? Poll timeout, "
+                             "but data read[%d]\n", i);
+                      printf("               (might just be a race "
+                             "condition)\n");
                     }
                 }
 
-              /* Suppress error report if no read data on the next time through */
+              /* Suppress error report if no read data on the next time
+               * through
+               */
 
               fds[i].revents = 0;
             }
@@ -355,7 +369,7 @@ static int button_daemon(int argc, char *argv[])
 
       oldsample = sample;
 #else
-      printf("Sample = %d\n", sample);
+      printf("Sample = %jd\n", (intmax_t)sample);
 #endif
 
       /* Make sure that everything is displayed */

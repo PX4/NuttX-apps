@@ -42,7 +42,6 @@ CONFIG_LV_EXAMPLES_URL ?= https://github.com/lvgl/lv_examples/archive
 LVGL_EXAMPLES_VERSION = $(patsubst "%",%,$(strip $(CONFIG_LVGL_VERSION)))
 LVGL_EXAMPLES_TARBALL = v$(LVGL_EXAMPLES_VERSION).zip
 
-WGET ?= wget
 LVGL_EXAMPLES_UNPACKNAME = lv_examples
 UNPACK ?= unzip -o
 
@@ -53,9 +52,13 @@ MODULE = $(CONFIG_EXAMPLES_LVGLDEMO)
 
 # LittleVGL demo Example
 
-CSRCS += fbdev.c tp.c tp_cal.c
+CSRCS += fbdev.c lcddev.c
 
-# static common assets used in mutiple example
+ifneq ($(CONFIG_INPUT_TOUCHSCREEN)$(CONFIG_INPUT_MOUSE),)
+CSRCS += tp.c tp_cal.c
+endif
+
+# static common assets used in multiple examples
 
 LV_EXAMPLE_ASSETS = $(wildcard ./lv_examples/assets/*.c)
 CSRCS += $(notdir $(LV_EXAMPLE_ASSETS))
@@ -86,12 +89,12 @@ endif
 
 MAINSRC = lvgldemo.c
 
-CFLAGS += ${shell $(DEFINE) "$(CC)" LV_LVGL_H_INCLUDE_SIMPLE}
-CXXFLAGS += ${shell $(DEFINE) "$(CC)" LV_LVGL_H_INCLUDE_SIMPLE}
+CFLAGS += ${shell $(DEFINE) "$(CC)" LV_LVGL_H_INCLUDE_SIMPLE} -Wno-format
+CXXFLAGS += ${shell $(DEFINE) "$(CC)" LV_LVGL_H_INCLUDE_SIMPLE} -Wno-format
 
 $(LVGL_EXAMPLES_TARBALL):
 	@echo "Downloading: $(LVGL_EXAMPLES_TARBALL)"
-	$(Q) $(WGET) $(CONFIG_LV_EXAMPLES_URL)/$(LVGL_EXAMPLES_TARBALL)
+	$(Q) curl -O -L $(CONFIG_LV_EXAMPLES_URL)/$(LVGL_EXAMPLES_TARBALL)
 
 $(LVGL_EXAMPLES_UNPACKNAME): $(LVGL_EXAMPLES_TARBALL)
 	@echo "Unpacking: $(LVGL_EXAMPLES_TARBALL) -> $(LVGL_EXAMPLES_UNPACKNAME)"

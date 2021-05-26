@@ -25,6 +25,7 @@
 #include <nuttx/sensors/sensor.h>
 #include <nuttx/config.h>
 #include <sys/ioctl.h>
+#include <inttypes.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -35,6 +36,7 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
+#define ARRAYSIZE(a)       (sizeof(a) / sizeof(a)[0])
 #define DEVNAME_FMT        "/dev/sensor/%s"
 #define DEVNAME_MAX        64
 
@@ -102,7 +104,8 @@ static const struct sensor_info g_sensor_info[] =
 static void print_vec3(const char *buffer, const char *name)
 {
   struct sensor_event_accel *event = (struct sensor_event_accel *)buffer;
-  printf("%s: timestamp:%llu x:%.2f y:%.2f z:%.2f, temperature:%.2f\n",
+  printf("%s: timestamp:%" PRIu64 " x:%.2f y:%.2f z:%.2f, "
+         "temperature:%.2f\n",
          name, event->timestamp, event->x, event->y,
          event->z, event->temperature);
 }
@@ -110,28 +113,28 @@ static void print_vec3(const char *buffer, const char *name)
 static void print_valb(const char *buffer, const char *name)
 {
   struct sensor_event_hall *event = (struct sensor_event_hall *)buffer;
-  printf("%s: timestamp:%llu value:%d\n",
+  printf("%s: timestamp:%" PRIu64 " value:%d\n",
          name, event->timestamp, event->hall);
 }
 
 static void print_valf(const char *buffer, const char *name)
 {
   struct sensor_event_prox *event = (struct sensor_event_prox *)buffer;
-  printf("%s: timestamp:%llu value:%.2f\n",
+  printf("%s: timestamp:%" PRIu64 " value:%.2f\n",
          name, event->timestamp, event->proximity);
 }
 
 static void print_valf2(const char *buffer, const char *name)
 {
   struct sensor_event_baro *event = (struct sensor_event_baro *)buffer;
-  printf("%s: timestamp:%llu value1:%.2f value2:%.2f\n",
+  printf("%s: timestamp:%" PRIu64 " value1:%.2f value2:%.2f\n",
          name, event->timestamp, event->pressure, event->temperature);
 }
 
 static void print_valf3(const char *buffer, const char *name)
 {
   struct sensor_event_rgb *event = (struct sensor_event_rgb *)buffer;
-  printf("%s: timestamp:%llu value1:%.2f value2:%.2f, value3:%.2f\n",
+  printf("%s: timestamp:%" PRIu64 " value1:%.2f value2:%.2f, value3:%.2f\n",
          name, event->timestamp, event->r, event->g, event->b);
 }
 
@@ -149,15 +152,17 @@ static void print_gps(const char *buffer, const char *name)
 
 static void usage(void)
 {
-  printf("sensortest <command> [arguments...]\n");
-  printf(" Commands:\n");
-  printf("\t<sensor_node_name> ex, accel0(/dev/sensor/accel0)\n");
-
+  printf("sensortest [arguments...] <command>\n");
   printf("\t[-h      ]  sensotest commands help\n");
   printf("\t[-i <val>]  The output data period of sensor in us\n");
   printf("\t            default: 1000000\n");
   printf("\t[-b <val>]  The maximum report latency of sensor in us\n");
   printf("\t            default: 0\n");
+  printf("\t[-n <val>]  The specify number of output data\n");
+  printf("\t            default: 0\n");
+
+  printf(" Commands:\n");
+  printf("\t<sensor_node_name> ex, accel0(/dev/sensor/accel0)\n");
 }
 
 static void exit_handler(int signo)
@@ -176,7 +181,9 @@ static void exit_handler(int signo)
 int main(int argc, FAR char *argv[])
 {
   unsigned int interval = 1000000;
+  unsigned int received = 0;
   unsigned int latency = 0;
+  unsigned int count = 0;
   char devname[PATH_MAX];
   struct pollfd fds;
   FAR char *buffer;
@@ -198,48 +205,60 @@ int main(int argc, FAR char *argv[])
     }
 
   g_should_exit = false;
-  name = argv[1];
-  for (idx = 0; idx < SENSOR_TYPE_COUNT; idx++)
-    {
-      if (!strncmp(name, g_sensor_info[idx].name,
-          strlen(g_sensor_info[idx].name)))
-        {
-          len = g_sensor_info[idx].esize;
-          buffer = calloc(1, len);
-          break;
-        }
-    }
-
-  if (!len)
-    {
-      printf("The sensor node name:%s is invaild\n", name);
-      usage();
-      return -EINVAL;
-    }
-
-  if (!buffer)
-    {
-      return -ENOMEM;
-    }
-
-  while ((ret = getopt(argc, argv, "i:b:h")) != EOF)
+  while ((ret = getopt(argc, argv, "i:b:n:h")) != EOF)
     {
       switch (ret)
         {
           case 'i':
-            interval = strtol(optarg, NULL, 0);
+            interval = strtoul(optarg, NULL, 0);
             break;
 
           case 'b':
-            latency = strtol(optarg, NULL, 0);
+            latency = strtoul(optarg, NULL, 0);
+            break;
+
+          case 'n':
+            count = strtoul(optarg, NULL, 0);
             break;
 
           case 'h':
           default:
             usage();
-            goto opt_err;
-            break;
+            optind = 0;
+            return 0;
         }
+    }
+
+  if (optind < argc)
+    {
+      name = argv[optind];
+      for (idx = 0; idx < ARRAYSIZE(g_sensor_info); idx++)
+        {
+          if (!strncmp(name, g_sensor_info[idx].name,
+              strlen(g_sensor_info[idx].name)))
+            {
+              len = g_sensor_info[idx].esize;
+              buffer = calloc(1, len);
+              break;
+            }
+        }
+
+      if (!len)
+        {
+          printf("The sensor node name:%s is invaild\n", name);
+          usage();
+          return -EINVAL;
+        }
+
+      if (!buffer)
+        {
+          return -ENOMEM;
+        }
+    }
+  else
+    {
+      usage();
+      return -EINVAL;
     }
 
   snprintf(devname, PATH_MAX, DEVNAME_FMT, name);
@@ -249,34 +268,43 @@ int main(int argc, FAR char *argv[])
       ret = -errno;
       printf("Failed to open device:%s, ret:%s\n",
              devname, strerror(errno));
-      goto opt_err;
+      goto open_err;
     }
 
   ret = ioctl(fd, SNIOC_ACTIVATE, 1);
   if (ret < 0)
     {
       ret = -errno;
-      printf("Failed to enable sensor:%s, ret:%s\n",
-             devname, strerror(errno));
-      goto ctl_err;
+      if (ret != -ENOTTY)
+        {
+          printf("Failed to enable sensor:%s, ret:%s\n",
+                 devname, strerror(errno));
+          goto ctl_err;
+        }
     }
 
   ret = ioctl(fd, SNIOC_SET_INTERVAL, &interval);
   if (ret < 0)
     {
       ret = -errno;
-      snerr("Failed to set interval for sensor:%s, ret:%s\n",
-            devname, strerror(errno));
-      goto ctl_err;
+      if (ret != -ENOTTY)
+        {
+          printf("Failed to set interval for sensor:%s, ret:%s\n",
+                devname, strerror(errno));
+          goto ctl_err;
+        }
     }
 
   ret = ioctl(fd, SNIOC_BATCH, &latency);
   if (ret < 0)
     {
       ret = -errno;
-      snerr("Failed to batch for sensor:%s, ret:%s\n",
-            devname, strerror(errno));
-      goto ctl_err;
+      if (ret != -ENOTTY)
+        {
+          printf("Failed to batch for sensor:%s, ret:%s\n",
+                devname, strerror(errno));
+          goto ctl_err;
+        }
     }
 
   printf("SensorTest: Test %s with interval(%uus), latency(%uus)\n",
@@ -285,16 +313,20 @@ int main(int argc, FAR char *argv[])
   fds.fd = fd;
   fds.events = POLLIN;
 
-  while (!g_should_exit)
+  while ((!count || received < count) && !g_should_exit)
     {
       if (poll(&fds, 1, -1) > 0)
         {
           if (read(fd, buffer, len) >= len)
             {
+              received++;
               g_sensor_info[idx].print(buffer, name);
             }
         }
     }
+
+  printf("SensorTest: Received message: %s, number:%d/%d\n",
+         name, received, count);
 
   ret = ioctl(fd, SNIOC_ACTIVATE, 0);
   if (ret < 0)
@@ -307,8 +339,7 @@ int main(int argc, FAR char *argv[])
 
 ctl_err:
   close(fd);
-opt_err:
+open_err:
   free(buffer);
-  optind = 0;
   return ret;
 }

@@ -48,6 +48,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include <netinet/ether.h>
+
 #include "netutils/netlib.h"
 
 #include "wireless/wapi.h"
@@ -94,6 +96,8 @@ static int wapi_bitrate_cmd      (int sock, int argc, FAR char **argv);
 static int wapi_txpower_cmd      (int sock, int argc, FAR char **argv);
 static int wapi_scan_results_cmd (int sock, int argc, FAR char **argv);
 static int wapi_scan_cmd         (int sock, int argc, FAR char **argv);
+static int wapi_country_cmd      (int sock, int argc, FAR char **argv);
+static int wapi_sense_cmd        (int sock, int argc, FAR char **argv);
 #ifdef CONFIG_WIRELESS_WAPI_INITCONF
 static int wapi_reconnect_cmd    (int sock, int argc, FAR char **argv);
 static int wapi_save_config_cmd  (int sock, int argc, FAR char **argv);
@@ -119,6 +123,8 @@ static const struct wapi_command_s g_wapi_commands[] =
   {"ap",           2, 2, wapi_ap_cmd},
   {"bitrate",      3, 3, wapi_bitrate_cmd},
   {"txpower",      3, 3, wapi_txpower_cmd},
+  {"country",      2, 2, wapi_country_cmd},
+  {"sense",        1, 1, wapi_sense_cmd},
 #ifdef CONFIG_WIRELESS_WAPI_INITCONF
   {"reconnect",    1, 1, wapi_reconnect_cmd},
   {"save_config",  1, 1, wapi_save_config_cmd},
@@ -130,6 +136,10 @@ static const struct wapi_command_s g_wapi_commands[] =
  ****************************************************************************/
 
 #define NCOMMANDS (sizeof(g_wapi_commands) / sizeof(struct wapi_command_s))
+
+/* Maximum length of the PASSPHRASE, refer to IEEE802.11i specification */
+
+#define PASSPHRASE_MAX_LEN  (64)
 
 /****************************************************************************
  * Private Functions
@@ -253,6 +263,7 @@ static int wapi_show_cmd(int sock, int argc, FAR char **argv)
   int bitrate;
   int txpower;
   double freq;
+  int sense;
   int chan;
   int ret;
 
@@ -383,6 +394,14 @@ static int wapi_show_cmd(int sock, int argc, FAR char **argv)
     {
       printf("  TxPower: %d\n", txpower);
       printf("     Flag: %s\n", g_wapi_txpower_flags[txpower_flag]);
+    }
+
+  /* Get sensitivity */
+
+  ret = wapi_get_sensitivity(sock, ifname, &sense);
+  if (ret == 0)
+    {
+      printf("    Sense: %d\n", sense);
     }
 
   return 0;
@@ -734,6 +753,47 @@ static int wapi_scan_cmd(int sock, int argc, FAR char **argv)
   return wapi_scan_results_cmd(sock, 1, argv);
 }
 
+/****************************************************************************
+ * Name: wapi_country_cmd
+ *
+ * Description:
+ *  Set the country code
+ *
+ * Returned Value:
+ *   None
+ *
+ ****************************************************************************/
+
+static int wapi_country_cmd(int sock, int argc, FAR char **argv)
+{
+  return wapi_set_country(sock, argv[0], argv[1]);
+}
+
+/****************************************************************************
+ * Name: wapi_sense_cmd
+ *
+ * Description:
+ *  Get the sensitivity(RSSI)
+ *
+ * Returned Value:
+ *   None
+ *
+ ****************************************************************************/
+
+static int wapi_sense_cmd(int sock, int argc, FAR char **argv)
+{
+  int sense;
+  int ret;
+
+  ret = wapi_get_sensitivity(sock, argv[0], &sense);
+  if (ret == 0)
+    {
+      printf("%d\n", sense);
+    }
+
+  return ret;
+}
+
 #ifdef CONFIG_WIRELESS_WAPI_INITCONF
 
 /****************************************************************************
@@ -786,7 +846,7 @@ static int wapi_save_config_cmd(int sock, int argc, FAR char **argv)
   uint8_t if_flags;
   uint32_t value;
   size_t psk_len;
-  char psk[32];
+  char psk[PASSPHRASE_MAX_LEN];
   int ret;
 
   ret = netlib_getifstatus(argv[0], &if_flags);
@@ -825,7 +885,7 @@ static int wapi_save_config_cmd(int sock, int argc, FAR char **argv)
       return ret;
     }
 
-  conf.bssid = (FAR const char *)ap.ether_addr_octet;
+  conf.bssid = ether_ntoa(&ap);
 
   memset(psk, 0, sizeof(psk));
   ret = wpa_driver_wext_get_key_ext(sock,
@@ -900,14 +960,16 @@ static void wapi_showusage(FAR const char *progname, int exitcode)
   fprintf(stderr, "\t%s psk          <ifname> <passphrase> <index/flag>\n",
                    progname);
   fprintf(stderr, "\t%s disconnect   <ifname>\n", progname);
-  fprintf(stderr, "\t%s mode         <ifname> <ifname>     <index/mode>\n",
+  fprintf(stderr, "\t%s mode         <ifname>              <index/mode>\n",
                    progname);
-  fprintf(stderr, "\t%s ap           <ifname> <ifname>     <MAC address>\n",
+  fprintf(stderr, "\t%s ap           <ifname>              <MAC address>\n",
                    progname);
   fprintf(stderr, "\t%s bitrate      <ifname> <bitrate>    <index/flag>\n",
                    progname);
   fprintf(stderr, "\t%s txpower      <ifname> <txpower>    <index/flag>\n",
                    progname);
+  fprintf(stderr, "\t%s country      <ifname> <country code>\n", progname);
+  fprintf(stderr, "\t%s sense        <ifname>\n", progname);
 #ifdef CONFIG_WIRELESS_WAPI_INITCONF
   fprintf(stderr, "\t%s reconnect    <ifname>\n", progname);
   fprintf(stderr, "\t%s save_config  <ifname>\n", progname);
@@ -963,6 +1025,7 @@ int main(int argc, FAR char *argv[])
   FAR const struct wapi_command_s *wapicmd;
   int sock;
   int i;
+  int ret;
 
   /* Get the command */
 
@@ -1022,7 +1085,8 @@ int main(int argc, FAR char *argv[])
       return EXIT_FAILURE;
     }
 
-  if (wapicmd->handler(sock, argc - 2, argc == 2 ? NULL : &argv[2]) < 0)
+  ret = wapicmd->handler(sock, argc - 2, argc == 2 ? NULL : &argv[2]);
+  if (ret < 0)
     {
       WAPI_ERROR("ERROR: Process command (%s) failed.\n", cmdname);
     }
@@ -1030,5 +1094,5 @@ int main(int argc, FAR char *argv[])
   /* Close communication socket */
 
   close(sock);
-  return EXIT_SUCCESS;
+  return ret;
 }

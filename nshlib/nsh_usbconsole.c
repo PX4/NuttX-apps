@@ -77,31 +77,16 @@
 
 static void nsh_configstdio(int fd)
 {
-  /* Make sure the stdin, stdout, and stderr are closed */
+  /* Make sure the stdout, and stderr are flushed */
 
-  fclose(stdin);
-  fclose(stdout);
-  fclose(stderr);
+  fflush(stdout);
+  fflush(stderr);
 
   /* Dup the fd to create standard fd 0-2 */
 
   dup2(fd, 0);
   dup2(fd, 1);
   dup2(fd, 2);
-
-  /* fdopen to get the stdin, stdout and stderr streams. The following logic
-   * depends on the fact that the library layer will allocate FILEs in order.
-   * And since we closed stdin, stdout, and stderr above, that is what we
-   * should get.
-   *
-   * fd = 0 is stdin  (read-only)
-   * fd = 1 is stdout (write-only, append)
-   * fd = 2 is stderr (write-only, append)
-   */
-
-  fdopen(0, "r");
-  fdopen(1, "a");
-  fdopen(2, "a");
 }
 
 /****************************************************************************
@@ -148,7 +133,7 @@ static int nsh_nullstdio(void)
  *
  ****************************************************************************/
 
-static int nsh_waitusbready(void)
+static int nsh_waitusbready(FAR struct console_stdio_s *pstate)
 {
   char inch;
   ssize_t nbytes;
@@ -340,7 +325,7 @@ int nsh_consolemain(int argc, FAR char *argv[])
        * standard I/O to the USB serial device.
        */
 
-      ret = nsh_waitusbready();
+      ret = nsh_waitusbready(pstate);
       UNUSED(ret); /* Eliminate warning if not used */
       DEBUGASSERT(ret == OK);
 
