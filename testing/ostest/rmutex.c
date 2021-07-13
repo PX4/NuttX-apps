@@ -1,47 +1,44 @@
 /****************************************************************************
- * rmutex.c
+ * apps/testing/ostest/rmutex.c
  *
- *   Copyright (C) 2008 Gregory Nutt. All rights reserved.
- *   Author: Gregory Nutt <gnutt@nuttx.org>
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.  The
+ * ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- * 3. Neither the name NuttX nor the names of its contributors may be
- *    used to endorse or promote products derived from this software
- *    without specific prior written permission.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- *
+ ****************************************************************************/
+
+/****************************************************************************
+ * Included Files
  ****************************************************************************/
 
 #include <stdio.h>
 #include <pthread.h>
 #include "ostest.h"
 
+/****************************************************************************
+ * Pre-processor Definitions
+ ****************************************************************************/
+
 #define NTHREADS    3
 #define NLOOPS      3
 #define NRECURSIONS 3
 
 static pthread_mutex_t mut;
+
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
 
 static void thread_inner(int id, int level)
 {
@@ -54,9 +51,11 @@ static void thread_inner(int id, int level)
       status = pthread_mutex_lock(&mut);
       if (status != 0)
         {
-          printf("thread_inner[%d, %d]: ERROR pthread_mutex_lock failed: %d\n",
+          printf("thread_inner[%d, %d]: "
+                 "ERROR pthread_mutex_lock failed: %d\n",
                   id, level, status);
         }
+
       printf("thread_inner[%d, %d]: Locked\n", id, level);
 
       /* Try-lock already locked recursive mutex. */
@@ -64,7 +63,8 @@ static void thread_inner(int id, int level)
       status = pthread_mutex_trylock(&mut);
       if (status != 0)
         {
-          printf("thread_inner[%d, %d]: ERROR pthread_mutex_trylock failed: %d\n",
+          printf("thread_inner[%d, %d]: "
+                 "ERROR pthread_mutex_trylock failed: %d\n",
                   id, level, status);
         }
       else
@@ -74,15 +74,16 @@ static void thread_inner(int id, int level)
           status = pthread_mutex_unlock(&mut);
           if (status != 0)
             {
-              printf("thread_inner[%d, %d]: ERROR pthread_mutex_unlock after try-lock failed: %d\n",
-                 id, level, status);
+              printf("thread_inner[%d, %d]: ERROR "
+                     "pthread_mutex_unlock after try-lock failed: %d\n",
+                      id, level, status);
             }
         }
 
       /* Give the other threads a chance */
 
       pthread_yield();
-      thread_inner(id, level+1);
+      thread_inner(id, level + 1);
       pthread_yield();
 
       /* Unlock the mutex */
@@ -91,9 +92,11 @@ static void thread_inner(int id, int level)
       status = pthread_mutex_unlock(&mut);
       if (status != 0)
         {
-          printf("thread_inner[%d, %d]: ERROR pthread_mutex_unlock failed: %d\n",
+          printf("thread_inner[%d, %d]: "
+                 "ERROR pthread_mutex_unlock failed: %d\n",
                  id, level, status);
         }
+
       printf("thread_inner[%d, %d]: Unlocked\n", id, level);
       pthread_yield();
     }
@@ -133,17 +136,21 @@ void recursive_mutex_test(void)
   status = pthread_mutexattr_settype(&mattr, PTHREAD_MUTEX_RECURSIVE);
   if (status != 0)
     {
-      printf("recursive_mutex_test: ERROR pthread_mutexattr_settype failed, status=%d\n", status);
+      printf("recursive_mutex_test: "
+             "ERROR pthread_mutexattr_settype failed, status=%d\n", status);
     }
 
   status = pthread_mutexattr_gettype(&mattr, &type);
   if (status != 0)
     {
-      printf("recursive_mutex_test: ERROR pthread_mutexattr_gettype failed, status=%d\n", status);
+      printf("recursive_mutex_test: "
+             "ERROR pthread_mutexattr_gettype failed, status=%d\n", status);
     }
+
   if (type != PTHREAD_MUTEX_RECURSIVE)
     {
-      printf("recursive_mutex_test: ERROR pthread_mutexattr_gettype return type=%d\n", type);
+      printf("recursive_mutex_test: "
+             "ERROR pthread_mutexattr_gettype return type=%d\n", type);
     }
 
   /* Initialize the mutex */
@@ -152,23 +159,27 @@ void recursive_mutex_test(void)
   status = pthread_mutex_init(&mut, &mattr);
   if (status != 0)
     {
-      printf("recursive_mutex_test: ERROR pthread_mutex_init failed, status=%d\n", status);
+      printf("recursive_mutex_test: "
+             "ERROR pthread_mutex_init failed, status=%d\n", status);
     }
 
   /* Start the threads -- all at the same, default priority */
 
   for (i = 0; i < NTHREADS; i++)
     {
-      printf("recursive_mutex_test: Starting thread %d\n", i+1);
+      printf("recursive_mutex_test: Starting thread %d\n", i + 1);
 #ifdef SDCC
       pthread_attr_init(&attr);
-      status = pthread_create(&thread[i], &attr, thread_outer, (pthread_addr_t)((uintptr_t)i+1));
+      status = pthread_create(&thread[i], &attr, thread_outer,
+                             (pthread_addr_t)((uintptr_t)i + 1));
 #else
-      status = pthread_create(&thread[i], NULL, thread_outer, (pthread_addr_t)((uintptr_t)i+1));
+      status = pthread_create(&thread[i], NULL, thread_outer,
+                             (pthread_addr_t)((uintptr_t)i + 1));
 #endif
       if (status != 0)
         {
-          printf("recursive_mutex_test: ERROR thread#%d creation: %d\n", i+1, status);
+          printf("recursive_mutex_test: ERROR thread#%d creation: %d\n",
+                 i + 1, status);
         }
     }
 
@@ -176,7 +187,7 @@ void recursive_mutex_test(void)
 
   for (i = 0; i < NTHREADS; i++)
     {
-      printf("recursive_mutex_test: Waiting for thread %d\n", i+1);
+      printf("recursive_mutex_test: Waiting for thread %d\n", i + 1);
 #ifdef SDCC
       pthread_join(thread[i], &result[i]);
 #else

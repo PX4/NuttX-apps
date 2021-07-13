@@ -1,35 +1,20 @@
 /****************************************************************************
- * examples/alarm/alarm_main.c
+ * apps/examples/alarm/alarm_main.c
  *
- *   Copyright (C) 2016 Gregory Nutt. All rights reserved.
- *   Author: Gregory Nutt <gnutt@nuttx.org>
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.  The
+ * ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- * 3. Neither the name NuttX nor the names of its contributors may be
- *    used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
  ****************************************************************************/
 
@@ -135,7 +120,7 @@ static int alarm_daemon(int argc, FAR char *argv[])
         {
           if (g_alarm_received[i])
             {
-              printf("alarm_demon: alarm %d received\n", i)  ;
+              printf("alarm_daemon: alarm %d received\n", i)  ;
               g_alarm_received[i] = false;
             }
         }
@@ -144,7 +129,7 @@ static int alarm_daemon(int argc, FAR char *argv[])
        * this should cause us to awken earlier.
        */
 
-      usleep(500*1000L);
+      usleep(500 * 1000L);
     }
 
 errout:
@@ -175,7 +160,7 @@ static int start_daemon(void)
         }
 
       printf("alarm_daemon started\n");
-      usleep(500*1000L);
+      usleep(500 * 1000L);
     }
 
   return OK;
@@ -228,7 +213,8 @@ int main(int argc, FAR char *argv[])
       return EXIT_FAILURE;
     }
 
-  /* Parse commandline parameters. NOTE: getopt() is not thread safe nor re-entrant.
+  /* Parse commandline parameters. NOTE: getopt() is not thread safe nor
+   * re-entrant.
    * To keep its state proper for the next usage, it is necessary to parse to
    * the end of the line even if an error occurs.  If an error occurs, this
    * logic just sets 'badarg' and continues.
@@ -253,7 +239,9 @@ int main(int argc, FAR char *argv[])
           break;
         default:
           fprintf(stderr, "<unknown parameter '-%c'>\n\n", opt);
+
           /* fall through */
+
         case '?':
         case ':':
           badarg = true;
@@ -289,7 +277,8 @@ int main(int argc, FAR char *argv[])
       seconds = strtoul(argv[optind], NULL, 10);
       if (seconds < 1)
         {
-          fprintf(stderr, "ERROR: Invalid number of seconds: %lu\n", seconds);
+          fprintf(stderr, "ERROR: Invalid number of seconds: %lu\n",
+                  seconds);
           show_usage(argv[0]);
           return EXIT_FAILURE;
         }
@@ -310,7 +299,11 @@ int main(int argc, FAR char *argv[])
 
   if (readmode)
     {
-      struct rtc_rdalarm_s rd = { 0 };
+      struct rtc_rdalarm_s rd =
+      {
+        0
+      };
+
       long timeleft;
       time_t now;
 
@@ -357,13 +350,15 @@ int main(int argc, FAR char *argv[])
           rd.time.tm_mon = now_tm.tm_mon;
           rd.time.tm_year = now_tm.tm_year;
 
-          do {
+          do
+          {
             timeleft = mktime((struct tm *)&rd.time) - now;
             if (timeleft < 0)
               {
                 rd.time.tm_mon++;
               }
-          } while (timeleft < 0);
+          }
+          while (timeleft < 0);
         }
 
       printf("Alarm %d is %s with %ld seconds to expiration\n", alarmid,

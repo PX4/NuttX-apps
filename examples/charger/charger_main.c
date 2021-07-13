@@ -1,5 +1,5 @@
 /****************************************************************************
- * examples/charger/charger_main.c
+ * apps/examples/charger/charger_main.c
  *
  *   Copyright 2018 Sony Semiconductor Solutions Corporation
  *
@@ -244,8 +244,8 @@ int main(int argc, FAR char *argv[])
     }
 
   gettimeofday(&tv, NULL);
-  printf("%d.%06d: %d mV, %d mA\n",
-         tv.tv_sec, tv.tv_usec, voltage, current);
+  printf("%ju.%06ld: %d mV, %d mA\n",
+         (uintmax_t)tv.tv_sec, tv.tv_usec, voltage, current);
 
   close(fd);
 

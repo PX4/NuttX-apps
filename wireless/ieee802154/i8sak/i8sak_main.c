@@ -60,6 +60,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <queue.h>
@@ -76,6 +77,7 @@
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
+
 /* Configuration ************************************************************/
 
 #if !defined(CONFIG_IEEE802154_I8SAK_NINSTANCES) || CONFIG_IEEE802154_I8SAK_NINSTANCES <= 0
@@ -92,7 +94,8 @@
 struct i8sak_command_s
 {
   FAR const char *name;
-  CODE void (*handler)(FAR struct i8sak_s *i8sak, int argc, FAR char *argv[]);
+  CODE void (*handler)(FAR struct i8sak_s *i8sak,
+                       int argc, FAR char *argv[]);
 };
 
 /****************************************************************************
@@ -180,8 +183,10 @@ int i8sak_requestdaemon(FAR struct i8sak_s *i8sak)
 #endif
 
       i8sak->daemon_shutdown = false;
-      i8sak->daemon_pid = task_create(daemonname, CONFIG_IEEE802154_I8SAK_PRIORITY,
-                                      CONFIG_IEEE802154_I8SAK_STACKSIZE, i8sak_daemon,
+      i8sak->daemon_pid = task_create(daemonname,
+                                      CONFIG_IEEE802154_I8SAK_PRIORITY,
+                                      CONFIG_IEEE802154_I8SAK_STACKSIZE,
+                                      i8sak_daemon,
                                       NULL);
       if (i8sak->daemon_pid < 0)
         {
@@ -190,7 +195,7 @@ int i8sak_requestdaemon(FAR struct i8sak_s *i8sak)
           return ERROR;
         }
 
-      /* Use the signal semaphore to wait for daemon to start before returning */
+      /* Use the semaphore to wait for daemon to start before returning */
 
       ret = sem_wait(&i8sak->sigsem);
       if (ret < 0)
@@ -388,7 +393,8 @@ uint8_t i8sak_char2nibble(char ch)
     }
   else
     {
-      fprintf(stderr, "ERROR: Unexpected character in hex value: %02x\n", ch);
+      fprintf(stderr, "ERROR: Unexpected character in hex value: %02x\n",
+              ch);
       exit(EXIT_FAILURE);
     }
 }
@@ -570,8 +576,8 @@ static void i8sak_switch_instance(FAR char *ifname)
 
       sq_addlast((FAR sq_entry_t *)i8sak, &g_i8sak_instances);
 
-      /* Update our "sticky" i8sak instance. Must come before call to setup so that
-       * the shared active global i8sak is correct.
+      /* Update our "sticky" i8sak instance. Must come before call to setup
+       * so that the shared active global i8sak is correct.
        */
 
       g_activei8sak = i8sak;
@@ -604,6 +610,7 @@ static int i8sak_setup(FAR struct i8sak_s *i8sak, FAR const char *ifname)
       fprintf(stderr, "ERROR: ifname too long\n");
       return ERROR;
     }
+
   strcpy(&i8sak->ifname[0], ifname);
 
   i8sak->chan = 11;
@@ -615,21 +622,21 @@ static int i8sak_setup(FAR struct i8sak_s *i8sak, FAR const char *ifname)
   /* Initialize the default remote endpoint address */
 
   for (i = 0; i < IEEE802154_EADDRSIZE; i++)
-   {
-     i8sak->ep_addr.eaddr[i] =
-       (uint8_t)((CONFIG_IEEE802154_I8SAK_DEFAULT_EP_EADDR >> (i*8)) & 0xFF);
-   }
+    {
+      i8sak->ep_addr.eaddr[i] =
+        (CONFIG_IEEE802154_I8SAK_DEFAULT_EP_EADDR >> (i * 8)) & 0xff;
+    }
 
   for (i = 0; i < IEEE802154_SADDRSIZE; i++)
     {
       i8sak->ep_addr.saddr[i] =
-        (uint8_t)((CONFIG_IEEE802154_I8SAK_DEFAULT_EP_SADDR >> (i*8)) & 0xFF);
+        (CONFIG_IEEE802154_I8SAK_DEFAULT_EP_SADDR >> (i * 8)) & 0xff;
     }
 
   for (i = 0; i < IEEE802154_PANIDSIZE; i++)
     {
       i8sak->ep_addr.panid[i] =
-        (uint8_t)((CONFIG_IEEE802154_I8SAK_DEFAULT_EP_PANID >> (i*8)) & 0xFF);
+        (CONFIG_IEEE802154_I8SAK_DEFAULT_EP_PANID >> (i * 8)) & 0xff;
     }
 
 #ifdef CONFIG_NET_6LOWPAN
@@ -646,12 +653,12 @@ static int i8sak_setup(FAR struct i8sak_s *i8sak, FAR const char *ifname)
    */
 
   for (i = 0; i < IEEE802154_SADDRSIZE; i++)
-   {
-     i8sak->next_saddr[i] =
-        (uint8_t)(((CONFIG_IEEE802154_I8SAK_DEFAULT_EP_SADDR + 1) >> (i*8)) & 0xFF);
-   }
+    {
+      i8sak->next_saddr[i] =
+        ((CONFIG_IEEE802154_I8SAK_DEFAULT_EP_SADDR + 1) >> (i * 8)) & 0xff;
+    }
 
-   /* Check if argument starts with /dev/ */
+  /* Check if argument starts with /dev/ */
 
   if (strncmp(ifname, "/dev/", 5) == 0)
     {
@@ -667,7 +674,8 @@ static int i8sak_setup(FAR struct i8sak_s *i8sak, FAR const char *ifname)
       fd = open(i8sak->ifname, O_RDWR);
       if (fd < 0)
         {
-          fprintf(stderr, "ERROR: cannot open %s, errno=%d\n", i8sak->ifname, errno);
+          fprintf(stderr, "ERROR: cannot open %s, errno=%d\n",
+                  i8sak->ifname, errno);
           i8sak_cmd_error(i8sak);
         }
     }
@@ -709,7 +717,8 @@ static int i8sak_setup(FAR struct i8sak_s *i8sak, FAR const char *ifname)
   sq_init(&i8sak->eventreceivers_free);
   for (i = 0; i < CONFIG_I8SAK_NEVENTRECEIVERS; i++)
     {
-      sq_addlast((FAR sq_entry_t *)&i8sak->eventreceiver_pool[i], &i8sak->eventreceivers_free);
+      sq_addlast((FAR sq_entry_t *)&i8sak->eventreceiver_pool[i],
+                 &i8sak->eventreceivers_free);
     }
 
   i8sak->blasterperiod = 1000;
@@ -737,7 +746,8 @@ static int i8sak_daemon(int argc, FAR char *argv[])
       i8sak->fd = open(i8sak->ifname, O_RDWR);
       if (i8sak->fd < 0)
         {
-          fprintf(stderr, "ERROR: cannot open %s, errno=%d\n", i8sak->ifname, errno);
+          fprintf(stderr, "ERROR: cannot open %s, errno=%d\n",
+                  i8sak->ifname, errno);
           ret = errno;
           return ret;
         }
@@ -774,8 +784,8 @@ static int i8sak_daemon(int argc, FAR char *argv[])
           i8sak->blasterenabled = true;
           i8sak->startblaster = false;
 
-          ret = pthread_create(&i8sak->blaster_threadid, NULL, i8sak_blaster_thread,
-                               (void *)i8sak);
+          ret = pthread_create(&i8sak->blaster_threadid, NULL,
+                               i8sak_blaster_thread, (void *)i8sak);
           if (ret != 0)
             {
               fprintf(stderr, "failed to start blaster thread: %d\n", ret);
@@ -788,8 +798,8 @@ static int i8sak_daemon(int argc, FAR char *argv[])
           i8sak->snifferenabled = true;
           i8sak->startsniffer = false;
 
-          ret = pthread_create(&i8sak->sniffer_threadid, NULL, i8sak_sniffer_thread,
-                               (void *)i8sak);
+          ret = pthread_create(&i8sak->sniffer_threadid, NULL,
+                               i8sak_sniffer_thread, (void *)i8sak);
           if (ret != 0)
             {
               fprintf(stderr, "failed to start sniffer thread: %d\n", ret);
@@ -814,7 +824,8 @@ static int i8sak_daemon(int argc, FAR char *argv[])
 
 static int i8sak_showusage(FAR const char *progname, int exitcode)
 {
-  fprintf(stderr, "Usage (Use the -h option on any command to get more info): %s\n"
+  fprintf(stderr,
+          "Usage (Use the -h option on any command to get more info): %s\n"
           "    acceptassoc [-h|e]\n"
           "    assoc [-h|p|e|s|w|r|t]\n"
           "    blaster [-h|q|f|p]\n"
@@ -866,7 +877,6 @@ int main(int argc, FAR char *argv[])
       if ((strncmp(argv[argind], "/dev/", 5) == 0) ||
           (strncmp(argv[argind], "wpan", 4) == 0))
         {
-
           i8sak_switch_instance(argv[argind]);
           argind++;
 

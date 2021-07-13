@@ -1,35 +1,20 @@
 /****************************************************************************
  * apps/system/stackmonitor/stackmonitor.c
  *
- *   Copyright (C) 2013, 2018 Gregory Nutt. All rights reserved.
- *   Author: Gregory Nutt <gnutt@nuttx.org>
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.  The
+ * ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- * 3. Neither the name NuttX nor the names of its contributors may be
- *    used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
  ****************************************************************************/
 
@@ -129,7 +114,6 @@ static FAR char *stkmon_isolate_value(FAR char *line)
  ****************************************************************************/
 
 static int stkmon_process_directory(FAR struct dirent *entryp)
-
 {
   FAR char *filepath;
   FAR char *endptr;
@@ -147,12 +131,14 @@ static int stkmon_process_directory(FAR struct dirent *entryp)
   /* Read the task status to get the task name */
 
   filepath = NULL;
-  ret = asprintf(&filepath, CONFIG_SYSTEM_STACKMONITOR_MOUNTPOINT "/%s/status",
+  ret = asprintf(&filepath,
+                 CONFIG_SYSTEM_STACKMONITOR_MOUNTPOINT "/%s/status",
                  entryp->d_name);
   if (ret < 0 || filepath == NULL)
     {
       errcode = errno;
-      fprintf(stderr, "Stack Monitor: Failed to create path to status file: %d\n",
+      fprintf(stderr,
+              "Stack Monitor: Failed to create path to status file: %d\n",
               errcode);
       return -errcode;
     }
@@ -200,12 +186,14 @@ static int stkmon_process_directory(FAR struct dirent *entryp)
   stack_used = 0;
   filepath   = NULL;
 
-  ret = asprintf(&filepath, CONFIG_SYSTEM_STACKMONITOR_MOUNTPOINT "/%s/stack",
+  ret = asprintf(&filepath,
+                 CONFIG_SYSTEM_STACKMONITOR_MOUNTPOINT "/%s/stack",
                  entryp->d_name);
   if (ret < 0 || filepath == NULL)
     {
       errcode = errno;
-      fprintf(stderr, "Stack Monitor: Failed to create path to stack file: %d\n",
+      fprintf(stderr,
+              "Stack Monitor: Failed to create path to stack file: %d\n",
               errcode);
       ret = -EINVAL;
       goto errout_with_name;
@@ -238,7 +226,8 @@ static int stkmon_process_directory(FAR struct dirent *entryp)
           stack_size = (uint32_t)strtoul(tmpstr, &endptr, 10);
           if (*endptr != '\0')
             {
-              fprintf(stderr, "Stack Monitor: Bad numeric value %s\n", tmpstr);
+              fprintf(stderr,
+                      "Stack Monitor: Bad numeric value %s\n", tmpstr);
               ret = -EINVAL;
               goto errout_with_stream;
             }
@@ -258,7 +247,8 @@ static int stkmon_process_directory(FAR struct dirent *entryp)
               stack_used = (uint32_t)strtoul(tmpstr, &endptr, 10);
               if (*endptr != '\0')
                 {
-                  fprintf(stderr, "Stack Monitor: Bad numeric value %s\n", tmpstr);
+                  fprintf(stderr,
+                          "Stack Monitor: Bad numeric value %s\n", tmpstr);
                   ret = -EINVAL;
                   goto errout_with_stream;
                 }
@@ -269,9 +259,11 @@ static int stkmon_process_directory(FAR struct dirent *entryp)
   /* Finally, output the stack info that we gleaned from the procfs */
 
 #if CONFIG_TASK_NAME_SIZE > 0
-  printf("%5s %6lu %6lu %s\n", entryp->d_name, stack_size, stack_used, name);
+  printf("%5s %6lu %6lu %s\n",
+         entryp->d_name, stack_size, stack_used, name);
 #else
-  printf("%5s %6lu %6lu\n", entryp->d_name, stack_size, stack_used);
+  printf("%5s %6lu %6lu\n",
+         entryp->d_name, stack_size, stack_used);
 #endif
 
   ret = OK;
@@ -289,6 +281,7 @@ errout_with_name:
       free(name);
     }
 #endif
+
   return ret;
 }
 
@@ -348,7 +341,8 @@ static int stackmonitor_daemon(int argc, char **argv)
 
           if (++errcount > 100)
             {
-              fprintf(stderr, "Stack Monitor: Too many errors ... exiting\n");
+              fprintf(stderr,
+                      "Stack Monitor: Too many errors ... exiting\n");
               exitcode = EXIT_FAILURE;
               break;
             }
@@ -388,13 +382,14 @@ static int stackmonitor_daemon(int argc, char **argv)
                 {
                   /* Failed to process the thread directory */
 
-                  fprintf(stderr,
-                          "Stack Monitor: Failed to process sub-directory: %s\n",
+                  fprintf(stderr, "Stack Monitor: "
+                          "Failed to process sub-directory: %s\n",
                           entryp->d_name);
 
                   if (++errcount > 100)
                     {
-                      fprintf(stderr, "Stack Monitor: Too many errors ... exiting\n");
+                      fprintf(stderr,
+                             "Stack Monitor: Too many errors ... exiting\n");
                       exitcode = EXIT_FAILURE;
                       break;
                     }
@@ -436,11 +431,13 @@ int main(int argc, char **argv)
 
       ret = task_create("Stack Monitor", CONFIG_SYSTEM_STACKMONITOR_PRIORITY,
                         CONFIG_SYSTEM_STACKMONITOR_STACKSIZE,
-                        (main_t)stackmonitor_daemon, (FAR char * const *)NULL);
+                        (main_t)stackmonitor_daemon,
+                        (FAR char * const *)NULL);
       if (ret < 0)
         {
           int errcode = errno;
-          printf("Stack Monitor ERROR: Failed to start the stack monitor: %d\n",
+          printf("Stack Monitor ERROR: "
+                 "Failed to start the stack monitor: %d\n",
                  errcode);
         }
       else

@@ -1,35 +1,20 @@
 /****************************************************************************
- * apps/system/hex2bin_main.c
+ * apps/system/hex2bin/hex2bin_main.c
  *
- *   Copyright (C) 2014, 2016 Gregory Nutt. All rights reserved.
- *   Author: Gregory Nutt <gnutt@nuttx.org>
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.  The
+ * ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- * 3. Neither the name NuttX nor the names of its contributors may be
- *    used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
  ****************************************************************************/
 
@@ -42,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <assert.h>
 #include <errno.h>
 #include <hex2bin.h>
 
@@ -65,27 +51,28 @@ static void show_usage(FAR const char *progname, int exitcode)
   fprintf(stderr, "\t%s -h\n", progname);
   fprintf(stderr, "Where:\n");
   fprintf(stderr, "\t<hexfile>:\n");
-  fprintf(stderr, "\t\tThe file containing the Intel HEX data to be converted.\n");
+  fprintf(stderr, "\t\tThe file containing the Intel HEX data to be\n");
+  fprintf(stderr, "\t\tconverted.\n");
   fprintf(stderr, "\t<binfile>:\n");
-  fprintf(stderr, "\t\tThe output file to be created contained the converted\n");
-  fprintf(stderr, "\t\tbinary data.\n");
+  fprintf(stderr, "\t\tThe output file to be created contained the\n");
+  fprintf(stderr, "\t\tconverted binary data.\n");
   fprintf(stderr, "\t-h:\n");
   fprintf(stderr, "\t\tPrints this message and exits\n");
   fprintf(stderr, "And [OPTIONS] include:\n");
   fprintf(stderr, "\t-s <start address>\n");
-  fprintf(stderr, "\t\tSets the start address of the binary output.  This value\n");
-  fprintf(stderr, "\t\tis used to (1) calculate offsets into the output stream,\n");
-  fprintf(stderr, "\t\tand (2) for error checking.  Default: 0x%08x\n",
-          CONFIG_SYSTEM_HEX2BIN_BASEADDR);
+  fprintf(stderr, "\t\tSets the start address of the binary output. This\n");
+  fprintf(stderr, "\t\tvalue is used to (1) calculate offsets into the\n");
+  fprintf(stderr, "\t\toutput stream, and (2) for error checking.\n");
+  fprintf(stderr, "\t\tDefault: 0x%08x\n", CONFIG_SYSTEM_HEX2BIN_BASEADDR);
   fprintf(stderr, "\t-e <end address>\n");
-  fprintf(stderr, "\t\tSets the maximum address (plus 1) of the binary output.\n");
-  fprintf(stderr, "\t\tThis value is used to only for error checking.  The value\n");
-  fprintf(stderr, "\t\tzero disables error checking.  Default: 0x%08x\n",
-          CONFIG_SYSTEM_HEX2BIN_ENDPADDR);
+  fprintf(stderr, "\t\tSets the maximum address (plus 1) of the binary\n");
+  fprintf(stderr, "\t\toutput. This value is used to only for error\n");
+  fprintf(stderr, "\t\tchecking. The value zero disables error checking.\n");
+  fprintf(stderr, "\t\t Default: 0x%08x\n", CONFIG_SYSTEM_HEX2BIN_ENDPADDR);
   fprintf(stderr, "\t\tno error checking\n");
   fprintf(stderr, "\t-w <swap code>\n");
-  fprintf(stderr, "\t\t(0) No swap, (1) swap bytes in 16-bit values, or (3) swap\n");
-  fprintf(stderr, "\t\tbytes in 32-bit values.  Default: %d\n",
+  fprintf(stderr, "\t\t(0) No swap, (1) swap bytes in 16-bit values, or\n");
+  fprintf(stderr, "\t\t(3) swap bytes in 32-bit values.  Default: %d\n",
           CONFIG_SYSTEM_HEX2BIN_SWAP);
 #endif
   exit(exitcode);

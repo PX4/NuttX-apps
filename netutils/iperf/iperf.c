@@ -27,6 +27,8 @@
 #include <net/if.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <assert.h>
+#include <stdbool.h>
 #include "iperf.h"
 
 /****************************************************************************
@@ -57,7 +59,7 @@ struct iperf_ctrl_t
 {
   struct iperf_cfg_t cfg;
   bool finish;
-  uint32_t total_len;
+  uintmax_t total_len;
   uint32_t buffer_len;
   uint8_t *buffer;
   uint32_t sockfd;
@@ -190,6 +192,32 @@ static int iperf_show_socket_error_reason(const char *str, int sockfd)
 }
 
 /****************************************************************************
+ * Name: ts_sec
+ *
+ * Description:
+ *    Convert a timespec to a double.
+ *
+ ****************************************************************************/
+
+static double ts_sec(const struct timespec *ts)
+{
+  return (double)ts->tv_sec + (double)ts->tv_nsec / 1e9;
+}
+
+/****************************************************************************
+ * Name: ts_diff
+ *
+ * Description:
+ *   Return the diff of two timespecs in second.
+ *
+ ****************************************************************************/
+
+static double ts_diff(const struct timespec *a, const struct timespec *b)
+{
+  return ts_sec(a) - ts_sec(b);
+}
+
+/****************************************************************************
  * Name: iperf_report_task
  *
  * Description:
@@ -201,29 +229,62 @@ static void iperf_report_task(void *arg)
 {
   uint32_t interval = s_iperf_ctrl.cfg.interval;
   uint32_t time = s_iperf_ctrl.cfg.time;
-  uint32_t last_len = 0;
-  uint32_t cur = 0;
+  struct timespec now;
+  struct timespec start;
+  uintmax_t now_len;
+  int ret;
+#ifdef CONFIG_CLOCK_MONOTONIC
+  const clockid_t clockid = CLOCK_MONOTONIC;
+#else
+  const clockid_t clockid = CLOCK_REALTIME;
+#endif
 
-  printf("\n%16s %s\n", "Interval", "Bandwidth\n");
+  now_len = s_iperf_ctrl.total_len;
+  ret = clock_gettime(clockid, &now);
+  if (ret != 0)
+    {
+      fprintf(stderr, "clock_gettime failed\n");
+      exit(EXIT_FAILURE);
+    }
+
+  start = now;
+  printf("\n%19s %16s %18s\n", "Interval", "Transfer", "Bandwidth\n");
   while (!s_iperf_ctrl.finish)
     {
+      uintmax_t last_len;
+      struct timespec last;
+
       sleep(interval);
-      printf("%4" PRId32 "-%4" PRId32 " sec,  %.2f Mbits/sec\n",
-             cur, cur + interval,
-             (double)((s_iperf_ctrl.total_len - last_len) * 8) /
-             interval / 1e6);
-      cur += interval;
-      last_len = s_iperf_ctrl.total_len;
-      if (cur >= time)
+      last_len = now_len;
+      last = now;
+      now_len = s_iperf_ctrl.total_len;
+      ret = clock_gettime(clockid, &now);
+      if (ret != 0)
+        {
+          fprintf(stderr, "clock_gettime failed\n");
+          exit(EXIT_FAILURE);
+        }
+
+      printf("%7.2lf-%7.2lf sec %10ju Bytes %7.2f Mbits/sec\n",
+             ts_diff(&last, &start),
+             ts_diff(&now, &start),
+             now_len,
+             (((double)(now_len - last_len) * 8) /
+             ts_diff(&now, &last) / 1e6));
+      if (time != 0 && ts_diff(&now, &start) >= time)
         {
           break;
         }
     }
 
-  if (cur != 0)
+  if (ts_diff(&now, &start) > 0)
     {
-      printf("%4d-%4" PRId32 " sec,  %.2f Mbits/sec\n", 0, time,
-            (double)(s_iperf_ctrl.total_len * 8) / cur / 1e6);
+      printf("%7.2lf-%7.2lf sec %10ju Bytes %7.2f Mbits/sec\n",
+             ts_diff(&start, &start),
+             ts_diff(&now, &start),
+             now_len,
+             (((double)now_len * 8) /
+             ts_diff(&now, &start) / 1e6));
     }
 
   s_iperf_ctrl.finish = true;
@@ -338,7 +399,20 @@ static int iperf_run_tcp_server(void)
       while (!s_iperf_ctrl.finish)
         {
           actual_recv = recv(sockfd, buffer, want_recv, 0);
-          if (actual_recv < 0)
+          if (actual_recv == 0)
+            {
+              printf("closed by the peer: %s,%d\n",
+                     inet_ntoa(remote_addr.sin_addr),
+                     htons(remote_addr.sin_port));
+
+              /* Note: unlike the original iperf, this implementation
+               * exits after finishing a single connection.
+               */
+
+              s_iperf_ctrl.finish = true;
+              break;
+            }
+          else if (actual_recv < 0)
             {
               iperf_show_socket_error_reason("tcp server recv",
                                              listen_socket);
@@ -601,9 +675,15 @@ static void iperf_task_traffic(void *arg)
     {
       iperf_run_tcp_client();
     }
-  else
+  else if (iperf_is_tcp_server())
     {
       iperf_run_tcp_server();
+    }
+  else
+    {
+      /* shouldn't happen */
+
+      assert(false);
     }
 
   if (s_iperf_ctrl.buffer)

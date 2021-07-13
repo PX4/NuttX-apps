@@ -1,35 +1,20 @@
 /****************************************************************************
  * apps/netutils/ftpc/ftpc_socket.c
  *
- *   Copyright (C) 2011 Gregory Nutt. All rights reserved.
- *   Author: Gregory Nutt <gnutt@nuttx.org>
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.  The
+ * ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- * 3. Neither the name NuttX nor the names of its contributors may be
- *    used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
  ****************************************************************************/
 
@@ -43,6 +28,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <assert.h>
 #include <debug.h>
 #include <errno.h>
 
@@ -148,8 +134,9 @@ errout:
 
 void ftpc_sockclose(FAR struct ftpc_socket_s *sock)
 {
-  /* Note that the same underlying socket descriptor is used for both streams.
-   * There should be harmless failures on the second fclose and the close.
+  /* Note that the same underlying socket descriptor is used for both
+   * streams. There should be harmless failures on the second fclose
+   * and the close.
    */
 
   fclose(sock->instream);
@@ -168,7 +155,8 @@ void ftpc_sockclose(FAR struct ftpc_socket_s *sock)
  *
  ****************************************************************************/
 
-int ftpc_sockconnect(FAR struct ftpc_socket_s *sock, FAR struct sockaddr *addr)
+int ftpc_sockconnect(FAR struct ftpc_socket_s *sock,
+                     FAR struct sockaddr *addr)
 {
   int ret;
 
@@ -177,14 +165,16 @@ int ftpc_sockconnect(FAR struct ftpc_socket_s *sock, FAR struct sockaddr *addr)
 #ifdef CONFIG_NET_IPv6
   if (addr->sa_family == AF_INET6)
     {
-      ret = connect(sock->sd, (struct sockaddr *)addr, sizeof(struct sockaddr_in6));
+      ret = connect(sock->sd, (struct sockaddr *)addr,
+                    sizeof(struct sockaddr_in6));
     }
   else
 #endif
 #ifdef CONFIG_NET_IPv4
   if (addr->sa_family == AF_INET)
     {
-      ret = connect(sock->sd, (struct sockaddr *)addr, sizeof(struct sockaddr_in));
+      ret = connect(sock->sd, (struct sockaddr *)addr,
+                    sizeof(struct sockaddr_in));
     }
   else
 #endif
@@ -234,21 +224,21 @@ void ftpc_sockcopy(FAR struct ftpc_socket_s *dest,
  *   Accept a connection on the data socket.  This function is only used
  *   in active mode.
  *
- *   In active mode FTP the client connects from a random port (N>1023) to the
- *   FTP server's command port, port 21. Then, the client starts listening to
- *   port N+1 and sends the FTP command PORT N+1 to the FTP server. The server
- *   will then connect back to the client's specified data port from its local
- *   data port, which is port 20. In passive mode FTP the client initiates
- *   both connections to the server, solving the problem of firewalls filtering
- *   the incoming data port connection to the client from the server. When
- *   opening an FTP connection, the client opens two random ports locally
- *   (N>1023 and N+1). The first port contacts the server on port 21, but
- *   instead of then issuing a PORT command and allowing the server to connect
- *   back to its data port, the client will issue the PASV command. The result
- *   of this is that the server then opens a random unprivileged port (P >
- *   1023) and sends the PORT P command back to the client. The client then
- *   initiates the connection from port N+1 to port P on the server to transfer
- *   data.
+ *   In active mode FTP the client connects from a random port (N>1023) to
+ *   the FTP server's command port, port 21. Then, the client starts
+ *   listening to port N+1 and sends the FTP command PORT N+1 to the FTP
+ *   server. The server will then connect back to the client's specified data
+ *   port from its local data port, which is port 20. In passive mode FTP the
+ *   client initiates both connections to the server, solving the problem of
+ *   firewalls filtering the incoming data port connection to the client from
+ *   the server. When opening an FTP connection, the client opens two random
+ *   ports locally (N>1023 and N+1). The first port contacts the server on
+ *   port 21, but instead of then issuing a PORT command and allowing the
+ *   server to connect back to its data port, the client will issue the PASV
+ *   command. The result of this is that the server then opens a random
+ *   unprivileged port (P > 1023) and sends the PORT P command back to the
+ *   client. The client then initiates the connection from port N+1 to port P
+ *   on the server to transfer data.
  *
  ****************************************************************************/
 
@@ -318,7 +308,7 @@ errout_with_sd:
  * Name: ftpc_socklisten
  *
  * Description:
- *   Bind the socket to local address and wait for connection from the server.
+ *   Bind the socket to local address and wait for connection from server.
  *
  ****************************************************************************/
 
@@ -411,5 +401,6 @@ int ftpc_sockgetsockname(FAR struct ftpc_socket_s *sock,
       nerr("ERROR: getsockname failed: %d\n", errno);
       return ERROR;
     }
+
   return OK;
 }

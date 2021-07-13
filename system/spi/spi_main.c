@@ -1,36 +1,20 @@
 /****************************************************************************
  * apps/system/spi/spi_main.c
  *
- *   Copyright (C) 2019 Gregory Nutt. All rights reserved.
- *   Author: Gregory Nutt <gnutt@nuttx.org>
- *           Dave Marples <dave@marples.net>
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.  The
+ * ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- * 3. Neither the name Gregory Nutt nor the names of its contributors may be
- *    used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
  ****************************************************************************/
 
@@ -82,14 +66,22 @@ static const struct cmdmap_s g_spicmds[] =
 
 /* Common, message formats */
 
-const char g_spiargrequired[]     = "spitool: %s: missing required argument(s)\n";
-const char g_spiarginvalid[]      = "spitool: %s: argument invalid\n";
-const char g_spiargrange[]        = "spitool: %s: value out of range\n";
-const char g_spicmdnotfound[]     = "spitool: %s: command not found\n";
-const char g_spitoomanyargs[]     = "spitool: %s: too many arguments\n";
-const char g_spicmdfailed[]       = "spitool: %s: %s failed: %d\n";
-const char g_spixfrerror[]        = "spitool: %s: Transfer failed: %d\n";
-const char g_spiincompleteparam[] = "spitool: %s: Odd number or illegal char in tx sequence\n";
+const char g_spiargrequired[]     =
+           "spitool: %s: missing required argument(s)\n";
+const char g_spiarginvalid[]      =
+           "spitool: %s: argument invalid\n";
+const char g_spiargrange[]        =
+           "spitool: %s: value out of range\n";
+const char g_spicmdnotfound[]     =
+           "spitool: %s: command not found\n";
+const char g_spitoomanyargs[]     =
+           "spitool: %s: too many arguments\n";
+const char g_spicmdfailed[]       =
+           "spitool: %s: %s failed: %d\n";
+const char g_spixfrerror[]        =
+           "spitool: %s: Transfer failed: %d\n";
+const char g_spiincompleteparam[] =
+           "spitool: %s: Odd number or illegal char in tx sequence\n";
 
 /****************************************************************************
  * Private Functions
@@ -141,7 +133,8 @@ static int spicmd_help(FAR struct spitool_s *spitool, int argc,
                           "Default: %d Current: %d\n",
                  0, spitool->csn);
 
-  spitool_printf(spitool, "  [-t devtype] Chip Select type (see spi_devtype_e).  "
+  spitool_printf(spitool, "  [-t devtype] Chip Select type "
+                          "(see spi_devtype_e).  "
                           "Default: %d Current: %d\n",
                  SPIDEVTYPE_USER, spitool->devtype);
 
@@ -158,12 +151,16 @@ static int spicmd_help(FAR struct spitool_s *spitool, int argc,
 
   spitool_printf(spitool, "\nNOTES:\n");
 #ifndef CONFIG_DISABLE_ENVIRON
-  spitool_printf(spitool, "o An environment variable like $PATH may be used for any argument.\n");
+  spitool_printf(spitool, "o An environment variable like $PATH may be used "
+                          "for any argument.\n");
 #endif
-  spitool_printf(spitool, "o Arguments are \"sticky\".  For example, once the SPI address is\n");
-  spitool_printf(spitool, "  specified, that address will be re-used until it is changed.\n");
+  spitool_printf(spitool, "o Arguments are \"sticky\".  "
+                          "For example, once the SPI address is\n");
+  spitool_printf(spitool, "  specified, that address will be re-used "
+                          "until it is changed.\n");
   spitool_printf(spitool, "\nWARNING:\n");
-  spitool_printf(spitool, "o The SPI commands may have bad side effects on your SPI devices.\n");
+  spitool_printf(spitool, "o The SPI commands may have bad side effects "
+                          "on your SPI devices.\n");
   spitool_printf(spitool, "  Use only at your own risk.\n");
   return OK;
 }

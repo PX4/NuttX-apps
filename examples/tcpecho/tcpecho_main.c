@@ -1,43 +1,26 @@
 /****************************************************************************
- * examples/tcpecho/tcpecho_main.c
+ * apps/examples/tcpecho/tcpecho_main.c
  *
- *   Copyright (C) 2013 Max Holtzberg. All rights reserved.
- *   Copyright (C) 2008, 2011-2012, 2015 Gregory Nutt. All rights reserved.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.  The
+ * ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at
  *
- *   Authors: Max Holtzberg <mh@uvc.de>
- *            Gregory Nutt <gnutt@nuttx.org>
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * This code is based upon the poll example from W. Richard Stevens'
- * UNIX Network Programming Book.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- * 3. Neither the name NuttX nor the names of its contributors may be
- *    used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
  ****************************************************************************/
+
+/* This code is based upon the poll example from W. Richard Stevens'
+ * UNIX Network Programming Book.
+ */
 
 /****************************************************************************
  * Included Files
@@ -112,7 +95,7 @@ static int tcpecho_netsetup()
   void *handle;
 #endif
 
-/* Many embedded network interfaces must have a software assigned MAC */
+  /* Many embedded network interfaces must have a software assigned MAC */
 
 #ifdef CONFIG_EXAMPLES_TCPECHO_NOMAC
   mac[0] = 0x00;
@@ -158,7 +141,8 @@ static int tcpecho_netsetup()
 
   handle = dhcpc_open("eth0", &mac, IFHWADDRLEN);
 
-  /* Get an IP address.  Note:  there is no logic here for renewing the address in this
+  /* Get an IP address.
+   * Note:  there is no logic here for renewing the address in this
    * example.  The address should be renewed in ds.lease_time/2 seconds.
    */
 
@@ -200,7 +184,11 @@ static int tcpecho_netsetup()
 
 static int tcpecho_server(void)
 {
-  int i, maxi, listenfd, connfd, sockfd;
+  int i;
+  int maxi;
+  int listenfd;
+  int connfd;
+  int sockfd;
   int nready;
   int ret;
   ssize_t n;
@@ -208,7 +196,8 @@ static int tcpecho_server(void)
   socklen_t clilen;
   bool stop = false;
   struct pollfd client[CONFIG_EXAMPLES_TCPECHO_NCONN];
-  struct sockaddr_in cliaddr, servaddr;
+  struct sockaddr_in cliaddr;
+  struct sockaddr_in servaddr;
 
   listenfd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -223,7 +212,7 @@ static int tcpecho_server(void)
   servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
   servaddr.sin_port        = htons(CONFIG_EXAMPLES_TCPECHO_PORT);
 
-  ret = bind(listenfd, (struct sockaddr*)&servaddr, sizeof(servaddr));
+  ret = bind(listenfd, (struct sockaddr *)&servaddr, sizeof(servaddr));
   if (ret < 0)
     {
       perror("ERROR: failed to bind socket.\n");
@@ -250,14 +239,14 @@ static int tcpecho_server(void)
 
   while (!stop)
     {
-      nready = poll(client, maxi+1, TCPECHO_POLLTIMEOUT);
+      nready = poll(client, maxi + 1, TCPECHO_POLLTIMEOUT);
 
       if (client[0].revents & POLLRDNORM)
         {
           /* new client connection */
 
           clilen = sizeof(cliaddr);
-          connfd = accept(listenfd, (struct sockaddr*)&cliaddr, &clilen);
+          connfd = accept(listenfd, (struct sockaddr *)&cliaddr, &clilen);
 
           ninfo("new client: %s\n", inet_ntoa(cliaddr.sin_addr));
 
@@ -299,7 +288,7 @@ static int tcpecho_server(void)
 
           if (client[i].revents & (POLLRDNORM | POLLERR))
             {
-              if ( (n = read(sockfd, buf, TCPECHO_MAXLINE)) < 0)
+              if ((n = read(sockfd, buf, TCPECHO_MAXLINE)) < 0)
                 {
                   if (errno == ECONNRESET)
                     {

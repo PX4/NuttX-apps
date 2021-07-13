@@ -1,35 +1,20 @@
 /****************************************************************************
- * examples/sotest/sotest_main.c
+ * apps/examples/sotest/sotest_main.c
  *
- *   Copyright (C) 2017 Gregory Nutt. All rights reserved.
- *   Author: Gregory Nutt <gnutt@nuttx.org>
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.  The
+ * ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- * 3. Neither the name NuttX nor the names of its contributors may be
- *    used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
  ****************************************************************************/
 
@@ -41,6 +26,7 @@
 
 #ifdef CONFIG_EXAMPLES_SOTEST_BUILTINFS
 #  include <sys/mount.h>
+#  include <sys/boardctl.h>
 #endif
 
 #include <stdio.h>
@@ -124,7 +110,9 @@ int main(int argc, FAR char *argv[])
   CODE void (*testfunc)(FAR const char *msg);
   FAR const char *msg;
   int ret;
-
+#ifdef CONFIG_EXAMPLES_SOTEST_BUILTINFS
+  struct boardioc_romdisk_s desc;
+#endif
   /* Set the shared library symbol table */
 
   ret = dlsymtab((FAR struct symtab_s *)g_sot_exports, g_sot_nexports);
@@ -137,25 +125,21 @@ int main(int argc, FAR char *argv[])
 #ifdef CONFIG_EXAMPLES_SOTEST_BUILTINFS
   /* Create a ROM disk for the ROMFS filesystem */
 
+  desc.minor    = CONFIG_EXAMPLES_SOTEST_DEVMINOR;     /* Minor device number of the ROM disk. */
+  desc.nsectors = NSECTORS(romfs_img_len);             /* The number of sectors in the ROM disk */
+  desc.sectsize = SECTORSIZE;                          /* The size of one sector in bytes */
+  desc.image    = (FAR uint8_t *)romfs_img;            /* File system image */
+
   printf("main: Registering romdisk at /dev/ram%d\n",
          CONFIG_EXAMPLES_SOTEST_DEVMINOR);
 
-  ret = romdisk_register(CONFIG_EXAMPLES_SOTEST_DEVMINOR,
-                         (FAR uint8_t *)romfs_img,
-                         NSECTORS(romfs_img_len), SECTORSIZE);
+  ret = boardctl(BOARDIOC_ROMDISK, (uintptr_t)&desc);
+
   if (ret < 0)
     {
-      /* This will happen naturally if we registered the ROM disk
-       * previously.
-       */
-
-      if (ret != -EEXIST)
-        {
-          fprintf(stderr, "ERROR: romdisk_register failed: %d\n", ret);
-          exit(EXIT_FAILURE);
-        }
-
-      printf("main: ROM disk already registered\n");
+      fprintf(stderr, "ERROR: romdisk_register failed: %s\n",
+              strerror(errno));
+      exit(EXIT_FAILURE);
     }
 
   /* Mount the file system */
@@ -175,11 +159,9 @@ int main(int argc, FAR char *argv[])
 
 #if CONFIG_MODLIB_MAXDEPEND > 0
   /* Install the first test shared library.  The first shared library only
-   * verifies that symbols exported be one shared library can be used to
+   * verifies that symbols exported by one shared library can be used to
    * resolve undefined symbols in a second shared library.
    */
-
-  /* Install the second test shared library  */
 
   handle1 = dlopen(BINDIR "/modprint", RTLD_NOW | RTLD_LOCAL);
   if (handle1 == NULL)
@@ -277,7 +259,7 @@ int main(int argc, FAR char *argv[])
   ret = dlclose(handle2);
   if (ret < 0)
     {
-      fprintf(stderr, "ERROR: rmmod(handle2) failed: %d\n", ret);
+      fprintf(stderr, "ERROR: dlclose(handle2) failed: %d\n", ret);
       exit(EXIT_FAILURE);
     }
 
@@ -287,7 +269,7 @@ int main(int argc, FAR char *argv[])
   ret = dlclose(handle1);
   if (ret < 0)
     {
-      fprintf(stderr, "ERROR: rmmod(handle1) failed: %d\n", ret);
+      fprintf(stderr, "ERROR: dlclose(handle1) failed: %d\n", ret);
       exit(EXIT_FAILURE);
     }
 #endif

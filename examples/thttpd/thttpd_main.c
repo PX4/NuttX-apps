@@ -1,35 +1,20 @@
 /****************************************************************************
- * examples/thttpd/thttpd_main.c
+ * apps/examples/thttpd/thttpd_main.c
  *
- *   Copyright (C) 2009-2012 Gregory Nutt. All rights reserved.
- *   Author: Gregory Nutt <gnutt@nuttx.org>
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.  The
+ * ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at
  *
-  * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- * 3. Neither the name Gregory Nutt nor the names of its contributors may be
- *    used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
  ****************************************************************************/
 
@@ -58,6 +43,10 @@
 #include "netutils/thttpd.h"
 
 #include <nuttx/drivers/ramdisk.h>
+
+#ifdef CONFIG_THTTPD_NXFLAT
+#  include <sys/boardctl.h>
+#endif
 
 #ifdef CONFIG_THTTPD_BINFS
 #  include <nuttx/fs/unionfs.h>
@@ -91,6 +80,10 @@
 #  ifdef CONFIG_DISABLE_MOUNTPOINT
 #    error "You must not disable mountpoints via CONFIG_DISABLE_MOUNTPOINT in your configuration file"
 #  endif
+
+#ifndef CONFIG_BOARDCTL_ROMDISK
+#  error "CONFIG_BOARDCTL_ROMDISK should be enabled in the configuration file"
+#endif
 #endif
 
 #ifdef CONFIG_THTTPD_BINFS
@@ -204,6 +197,9 @@ int main(int argc, FAR char *argv[])
 #endif
   char *thttpd_argv = "thttpd";
   int ret;
+#ifdef CONFIG_THTTPD_NXFLAT
+  struct boardioc_romdisk_s desc;
+#endif
 
   /* Configure SLIP */
 
@@ -252,12 +248,18 @@ int main(int argc, FAR char *argv[])
 
   netlib_ifup("eth0");
 
+#ifdef CONFIG_THTTPD_NXFLAT
   /* Create a ROM disk for the ROMFS filesystem */
 
   printf("Registering romdisk\n");
 
-  ret = romdisk_register(0, (uint8_t *)romfs_img, NSECTORS(romfs_img_len),
-                         SECTORSIZE);
+  desc.minor    = 0;                                    /* Minor device number of the ROM disk. */
+  desc.nsectors = NSECTORS(romfs_img_len);              /* The number of sectors in the ROM disk */
+  desc.sectsize = SECTORSIZE;                           /* The size of one sector in bytes */
+  desc.image    = (FAR uint8_t *)romfs_img;             /* File system image */
+
+  ret = boardctl(BOARDIOC_ROMDISK, (uintptr_t)&desc);
+
   if (ret < 0)
     {
       printf("ERROR: romdisk_register failed: %d\n", ret);
@@ -275,6 +277,7 @@ int main(int argc, FAR char *argv[])
       printf("ERROR: mount(%s,%s,romfs) failed: %d\n",
              ROMFSDEV, ROMFS_MOUNTPT, errno);
     }
+#endif
 
 #ifdef CONFIG_THTTPD_BINFS
   /* Mount the BINFS file system */

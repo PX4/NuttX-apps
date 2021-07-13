@@ -1,10 +1,24 @@
 /****************************************************************************
- * system/zmodem/zm_send.c
+ * apps/system/zmodem/zm_send.c
  *
- *   Copyright (C) 2013 Gregory Nutt. All rights reserved.
- *   Author: Gregory Nutt <gnutt@nuttx.org>
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.  The
+ * ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at
  *
- * References:
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ ****************************************************************************/
+
+/* References:
  *   "The ZMODEM Inter Application File Transfer Protocol", Chuck Forsberg,
  *    Omen Technology Inc., October 14, 1988
  *
@@ -12,35 +26,7 @@
  *    where due:  Parts of the state machine design were inspired by the
  *    Zmodem library of Edward A. Falk, dated January, 1995.  License
  *    unspecified.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- * 3. Neither the name NuttX nor the names of its contributors may be
- *    used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- *
- ****************************************************************************/
+ */
 
 /****************************************************************************
  * Included Files
@@ -213,7 +199,9 @@ static const struct zm_transition_s g_zmr_initack[] =
   {ZME_ERROR,     false, ZMS_INITACK,  zms_error},
 };
 
-/* Events handled in state ZMS_FILEWAIT- Sent file header, waiting for ZRPOS */
+/* Events handled in state ZMS_FILEWAIT- Sent file header,
+ * waiting for ZRPOS
+ */
 
 static const struct zm_transition_s g_zms_filewait[] =
 {
@@ -232,8 +220,8 @@ static const struct zm_transition_s g_zms_filewait[] =
   {ZME_ERROR,     false, ZMS_FILEWAIT, zms_error},
 };
 
-/* Events handled in state ZMS_CRCWAIT - Sent file CRC, waiting for ZRPOS
- * response.
+/* Events handled in state ZMS_CRCWAIT - Sent file CRC,
+ * waiting for ZRPOS response.
  */
 
 static const struct zm_transition_s g_zms_crcwait[] =
@@ -464,14 +452,16 @@ static int zms_zrinit(FAR struct zm_state_s *pzm)
 #ifdef CONFIG_SYSTEM_ZMODEM_RCVSAMPLE
   /* We support CANFDX.  We can do ZCRCG if the remote sender does too */
 
-  if ((rcaps & (CANFDX | CANOVIO)) == (CANFDX | CANOVIO) && pzms->rcvmax == 0)
+  if ((rcaps & (CANFDX | CANOVIO)) ==
+      (CANFDX | CANOVIO) && pzms->rcvmax == 0)
     {
       pzms->dpkttype = ZCRCG;
     }
 #else
   /* We don't support CANFDX.  We can do ZCRCQ if the remote sender does  */
 
-  if ((rcaps & (CANFDX | CANOVIO)) == (CANFDX | CANOVIO) && pzms->rcvmax == 0)
+  if ((rcaps & (CANFDX | CANOVIO)) ==
+      (CANFDX | CANOVIO) && pzms->rcvmax == 0)
     {
       /* For the local sender, this is just like ZCRCW */
 
@@ -884,7 +874,9 @@ static int zms_sendpacket(FAR struct zm_state_s *pzm)
 
       sndsize = pzms->filesize - pzms->offset;
 
-      /* This is the number of bytes that have been sent but not yet acknowledged. */
+      /* This is the number of bytes that have been sent but not yet
+       * acknowledged.
+       */
 
       unacked = pzms->offset - pzms->lastoffs;
 
@@ -899,7 +891,9 @@ static int zms_sendpacket(FAR struct zm_state_s *pzm)
 
       if (pzms->rcvmax != 0)
         {
-          /* If we were to send 'sndsize' more bytes, would that exceed recvmax? */
+          /* If we were to send 'sndsize' more bytes,
+           * would that exceed recvmax?
+           */
 
           if (sndsize + unacked > pzms->rcvmax)
             {

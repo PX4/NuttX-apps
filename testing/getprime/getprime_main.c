@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/testing/getprime_main.c
+ * apps/testing/getprime/getprime_main.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <time.h>
+#include <assert.h>
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -146,9 +147,12 @@ static void get_prime_in_parallel(int n)
       ASSERT(status == OK);
     }
 
-  /* Wait for finishing the last thread */
+  /* Wait for all the threads to finish */
 
-  pthread_join(thread[n - 1], &result);
+  for (i = 0; i < n; i++)
+    {
+      pthread_join(thread[i], &result);
+    }
 
   printf("Done\n");
 }

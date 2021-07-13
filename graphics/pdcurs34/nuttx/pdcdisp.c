@@ -38,6 +38,7 @@
  ****************************************************************************/
 
 #include <sys/ioctl.h>
+#include <assert.h>
 #include <errno.h>
 
 #ifdef CONFIG_SYSTEM_TERMCURSES
@@ -837,7 +838,7 @@ static void PDC_transform_line_term(FAR SCREEN *s, int lineno, int x,
 
   /* Move to the specified line / col */
 
-  PDC_gotoyx_term(sp, lineno, x);
+  PDC_gotoyx_term(s, lineno, x);
 
   /* Loop through all characters to be displayed */
 

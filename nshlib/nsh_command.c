@@ -25,6 +25,7 @@
 #include <nuttx/config.h>
 
 #include <string.h>
+#include <assert.h>
 
 #ifdef CONFIG_NSH_BUILTIN_APPS
 #  include <nuttx/lib/builtin.h>
@@ -154,7 +155,7 @@ static const struct cmdmap_s g_cmdmap[] =
 #endif
 
 #ifndef CONFIG_NSH_DISABLE_DATE
-  { "date",     cmd_date,     1, 3, "[-s \"MMM DD HH:MM:SS YYYY\"]" },
+  { "date",     cmd_date,     1, 4, "[-s \"MMM DD HH:MM:SS YYYY\"] [-u]" },
 #endif
 
 #ifndef CONFIG_NSH_DISABLE_DD
@@ -260,7 +261,7 @@ static const struct cmdmap_s g_cmdmap[] =
 #endif
 
 #ifndef CONFIG_NSH_DISABLE_KILL
-  { "kill",     cmd_kill,     3, 3, "-<signal> <pid>" },
+  { "kill",     cmd_kill,     2, 3, "[-<signal>] <pid>" },
 #endif
 
 #ifndef CONFIG_DISABLE_MOUNTPOINT
@@ -434,7 +435,7 @@ static const struct cmdmap_s g_cmdmap[] =
 
 #ifdef NSH_HAVE_DIROPTS
 # ifndef CONFIG_NSH_DISABLE_RM
-  { "rm",       cmd_rm,       2, 2, "<file-path>" },
+  { "rm",       cmd_rm,       2, 3, "[-r] <file-path>" },
 # endif
 #endif
 

@@ -1,35 +1,20 @@
 /****************************************************************************
- * examples/bastest/bastest_main.c
+ * apps/examples/bastest/bastest_main.c
  *
- *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
- *   Author: Gregory Nutt <gnutt@nuttx.org>
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.  The
+ * ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- * 3. Neither the name NuttX nor the names of its contributors may be
- *    used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
  ****************************************************************************/
 
@@ -40,7 +25,9 @@
 #include <nuttx/config.h>
 
 #include <sys/mount.h>
+#include <sys/boardctl.h>
 #include <stdio.h>
+#include <string.h>
 #include <errno.h>
 
 #include <nuttx/drivers/ramdisk.h>
@@ -92,15 +79,23 @@
 int main(int argc, FAR char *argv[])
 {
   int ret;
+  struct boardioc_romdisk_s desc;
 
   /* Create a ROM disk for the ROMFS filesystem */
 
-  printf("Registering romdisk at /dev/ram%d\n", CONFIG_EXAMPLES_BASTEST_DEVMINOR);
-  ret = romdisk_register(CONFIG_EXAMPLES_BASTEST_DEVMINOR, (FAR uint8_t *)romfs_img,
-                         NSECTORS(romfs_img_len), SECTORSIZE);
+  printf("Registering romdisk at /dev/ram%d\n",
+          CONFIG_EXAMPLES_BASTEST_DEVMINOR);
+
+  desc.minor    = CONFIG_EXAMPLES_BASTEST_DEVMINOR;     /* Minor device number of the ROM disk. */
+  desc.nsectors = NSECTORS(romfs_img_len);              /* The number of sectors in the ROM disk */
+  desc.sectsize = SECTORSIZE;                           /* The size of one sector in bytes */
+  desc.image    = (FAR uint8_t *)romfs_img;             /* File system image */
+
+  ret = boardctl(BOARDIOC_ROMDISK, (uintptr_t)&desc);
   if (ret < 0)
     {
-      fprintf(stderr, "ERROR: romdisk_register failed: %d\n", ret);
+      fprintf(stderr, "ERROR: romdisk_register failed: %s\n",
+              strerror(errno));
       return 1;
     }
 
@@ -109,11 +104,12 @@ int main(int argc, FAR char *argv[])
   printf("Mounting ROMFS filesystem at target=%s with source=%s\n",
          MOUNTPT, CONFIG_EXAMPLES_BASTEST_DEVPATH);
 
-  ret = mount(CONFIG_EXAMPLES_BASTEST_DEVPATH, MOUNTPT, "romfs", MS_RDONLY, NULL);
+  ret = mount(CONFIG_EXAMPLES_BASTEST_DEVPATH, MOUNTPT, "romfs",
+              MS_RDONLY, NULL);
   if (ret < 0)
     {
       fprintf(stderr, "ERROR: mount(%s,%s,romfs) failed: %s\n",
-              CONFIG_EXAMPLES_BASTEST_DEVPATH, MOUNTPT, errno);
+              CONFIG_EXAMPLES_BASTEST_DEVPATH, MOUNTPT, strerror(errno));
       return 1;
     }
 

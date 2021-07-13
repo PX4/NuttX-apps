@@ -1,34 +1,20 @@
 /****************************************************************************
  * apps/netutils/libcurl4nx/curl4nx_easy_perform.c
- * Implementation of the HTTP client, cURL like interface.
  *
- *   Copyright (C) 2019 Gregory Nutt. All rights reserved.
- *   Author: Sebastien Lorquet <sebastien@lorquet.fr>
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.  The
+ * ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above
- *    copyright notice, this list of conditions and the following
- *    disclaimer in the documentation and/or other materials provided
- *    with the distribution.
- * 3. The name of the author may not be used to endorse or promote
- *    products derived from this software without specific prior
- *    written permission.
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS
- * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
- * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
  ****************************************************************************/
 
@@ -312,7 +298,9 @@ int curl4nx_easy_perform(FAR struct curl4nx_s *handle)
                   rxoff++;
                 }
 
-              /* Check for overflow, version code should not fill the tmpbuf */
+              /* Check for overflow,
+               * version code should not fill the tmpbuf
+               */
 
               if (tmplen == sizeof(tmpbuf))
                 {
@@ -364,7 +352,9 @@ int curl4nx_easy_perform(FAR struct curl4nx_s *handle)
                   rxoff++;
                 }
 
-              /* Check for overflow, version code should not fill the tmpbuf */
+              /* Check for overflow,
+               * version code should not fill the tmpbuf
+               */
 
               if (tmplen == sizeof(tmpbuf))
                 {
@@ -380,7 +370,7 @@ int curl4nx_easy_perform(FAR struct curl4nx_s *handle)
 
           if (state == CURL4NX_STATE_STATUSREASON)
             {
-               /* Accumulate response code until CRLF */
+              /* Accumulate response code until CRLF */
 
               while (rxoff < ret)
                 {
@@ -514,15 +504,17 @@ int curl4nx_easy_perform(FAR struct curl4nx_s *handle)
                                                    handle->max_redirs))
                                                 {
                                                   curl4nx_info(
-                                                    "Too many redirections\n");
-                                                  cret = CURL4NXE_TOO_MANY_REDIRECTS;
+                                                  "Too many redirections\n");
+                                                  cret =
+                                                  CURL4NXE_TOO_MANY_REDIRECTS;
                                                   goto close;
                                                 }
 
                                               cret =
-                                                curl4nx_easy_setopt(handle,
-                                                                    CURL4NXOPT_URL,
-                                                                    headerbuf + off);
+                                                curl4nx_easy_setopt(
+                                                        handle,
+                                                        CURL4NXOPT_URL,
+                                                        headerbuf + off);
                                               if (cret != CURL4NXE_OK)
                                                 {
                                                   goto close;
@@ -530,9 +522,10 @@ int curl4nx_easy_perform(FAR struct curl4nx_s *handle)
 
                                               redirected = true;
                                               redircount += 1;
-                                              curl4nx_info("REDIRECTION (%d) -> %s\n",
-                                                           redircount,
-                                                           headerbuf + off);
+                                              curl4nx_info("
+                                                REDIRECTION (%d) -> %s\n",
+                                                redircount,
+                                                headerbuf + off);
                                             }
                                         }
                                     }

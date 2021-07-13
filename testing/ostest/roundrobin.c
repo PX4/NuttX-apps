@@ -1,35 +1,20 @@
 /********************************************************************************
- * testing/ostest/roundrobin.c
+ * apps/testing/ostest/roundrobin.c
  *
- *   Copyright (C) 2007, 2008, 2012, 2015 Gregory Nutt. All rights reserved.
- *   Author: Gregory Nutt <gnutt@nuttx.org>
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.  The
+ * ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- * 3. Neither the name NuttX nor the names of its contributors may be
- *    used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
  ********************************************************************************/
 
@@ -54,7 +39,8 @@
 
 /* This numbers should be tuned for different processor speeds via .config file.
  * With default values the test takes about 30s on Cortex-M3 @ 24MHz. With 32767
- * range and 10 runs it takes ~320s. */
+ * range and 10 runs it takes ~320s.
+ */
 
 #ifndef CONFIG_TESTING_OSTEST_RR_RANGE
 #  define CONFIG_TESTING_OSTEST_RR_RANGE 10000
@@ -97,26 +83,26 @@ static void get_primes(int *count, int *last)
   *last = 0;    /* To make the compiler happy */
 
   for (number = 1; number < CONFIG_TESTING_OSTEST_RR_RANGE; number++)
-  {
-    int div;
-    bool is_prime = true;
-
-    for (div = 2; div <= number / 2; div++)
-      if (number % div == 0)
-      {
-        is_prime = false;
-        break;
-      }
-
-    if (is_prime)
     {
-      local_count++;
-      *last = number;
+      int div;
+      bool is_prime = true;
+
+      for (div = 2; div <= number / 2; div++)
+      if (number % div == 0)
+        {
+          is_prime = false;
+          break;
+        }
+
+      if (is_prime)
+        {
+          local_count++;
+          *last = number;
 #if 0 /* We don't really care what the numbers are */
-      printf(" Prime %d: %d\n", local_count, number);
+          printf(" Prime %d: %d\n", local_count, number);
 #endif
+        }
     }
-  }
 
   *count = local_count;
 }
@@ -134,7 +120,8 @@ static FAR void *get_primes_thread(FAR void *parameter)
 
   while (sem_wait(&g_rrsem) < 0);
 
-  printf("get_primes_thread id=%d started, looking for primes < %d, doing %d run(s)\n",
+  printf("get_primes_thread id=%d started, "
+         "looking for primes < %d, doing %d run(s)\n",
          id, CONFIG_TESTING_OSTEST_RR_RANGE, CONFIG_TESTING_OSTEST_RR_RUNS);
 
   for (i = 0; i < CONFIG_TESTING_OSTEST_RR_RUNS; i++)
@@ -178,7 +165,8 @@ void rr_test(void)
   status = pthread_attr_setschedparam(&attr, &sparam);
   if (status != OK)
     {
-      printf("rr_test: ERROR: pthread_attr_setschedparam failed, status=%d\n",  status);
+      printf("rr_test: ERROR: pthread_attr_setschedparam failed, status=%d\n",
+              status);
     }
   else
     {
@@ -188,7 +176,8 @@ void rr_test(void)
   status = pthread_attr_setschedpolicy(&attr, SCHED_RR);
   if (status != OK)
     {
-      printf("rr_test: ERROR: pthread_attr_setschedpolicy failed, status=%d\n",  status);
+      printf("rr_test: ERROR: pthread_attr_setschedpolicy failed, status=%d\n",
+              status);
     }
   else
     {
@@ -204,7 +193,8 @@ void rr_test(void)
 
   printf("rr_test: Starting first get_primes_thread\n");
 
-  status = pthread_create(&get_primes1_thread, &attr, get_primes_thread, (FAR void *)1);
+  status = pthread_create(&get_primes1_thread,
+                          &attr, get_primes_thread, (FAR void *)1);
   if (status != 0)
     {
       printf("         ERROR: Thread 1 creation failed: %d\n",  status);
@@ -213,15 +203,18 @@ void rr_test(void)
   printf("         First get_primes_thread: %d\n", (int)get_primes1_thread);
   printf("rr_test: Starting second get_primes_thread\n");
 
-  status = pthread_create(&get_primes2_thread, &attr, get_primes_thread, (FAR void *)2);
+  status = pthread_create(&get_primes2_thread,
+                          &attr, get_primes_thread, (FAR void *)2);
   if (status != 0)
     {
       printf("         ERROR: Thread 2 creation failed: %d\n",  status);
     }
 
   printf("         Second get_primes_thread: %d\n", (int)get_primes2_thread);
-  printf("rr_test: Waiting for threads to complete -- this should take awhile\n");
-  printf("         If RR scheduling is working, they should start and complete at\n");
+  printf("rr_test: "
+         "Waiting for threads to complete -- this should take awhile\n");
+  printf("         "
+         "If RR scheduling is working, they should start and complete at\n");
   printf("         about the same time\n");
 
   sem_post(&g_rrsem);

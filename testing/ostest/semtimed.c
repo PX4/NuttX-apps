@@ -1,35 +1,20 @@
 /****************************************************************************
  * apps/testing/ostest/semtimed.c
  *
- *   Copyright (C) 2014-2015 Gregory Nutt. All rights reserved.
- *   Author: Gregory Nutt <gnutt@nuttx.org>
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.  The
+ * ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- * 3. Neither the name NuttX nor the names of its contributors may be
- *    used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
  ****************************************************************************/
 
@@ -92,7 +77,8 @@ static void ostest_gettime(struct timespec *tp)
     {
       printf("ostest_gettime: ERROR: clock_gettime failed\n");
     }
-  else if (tp->tv_sec < 0 || tp->tv_nsec < 0 || tp->tv_nsec >= 1000*1000*1000)
+  else if (tp->tv_sec < 0 || tp->tv_nsec < 0 ||
+           tp->tv_nsec >= 1000 * 1000 * 1000)
     {
       printf("ostest_gettime: ERROR: clock_gettime returned bogus time\n");
     }
@@ -126,7 +112,9 @@ void semtimed_test(void)
       printf("semtimed_test: ERROR: sem_init failed\n");
     }
 
-  /* First, make sure that the timeout expires if the semaphore is never posted */
+  /* First,
+   * make sure that the timeout expires if the semaphore is never posted
+   */
 
   ostest_gettime(&before);
 
@@ -151,7 +139,8 @@ void semtimed_test(void)
         }
       else
         {
-          printf("semtimed_test: ERROR: sem_timedwait failed with: %d\n", errcode);
+          printf("semtimed_test: ERROR: sem_timedwait failed with: %d\n",
+                  errcode);
         }
     }
 
@@ -160,14 +149,18 @@ void semtimed_test(void)
   printf("AFTER:  (%lu sec, %lu nsec)\n",
           (unsigned long)after.tv_sec, (unsigned long)after.tv_nsec);
 
-  /* Now make sure that the time wait returns successfully if the semaphore is posted */
+  /* Now make sure that the time wait returns successfully if the semaphore
+   * is posted
+   */
+
   /* Start a poster thread.  It will wait 1 seconds and post the semaphore */
 
   printf("semtimed_test: Starting poster thread\n");
   status = pthread_attr_init(&attr);
   if (status != OK)
     {
-      printf("semtimed_test: ERROR: pthread_attr_init failed, status=%d\n",  status);
+      printf("semtimed_test: ERROR: pthread_attr_init failed, status=%d\n",
+              status);
     }
 
   prio_min = sched_get_priority_min(SCHED_FIFO);
@@ -175,38 +168,44 @@ void semtimed_test(void)
   prio_mid = (prio_min + prio_max) / 2;
 
   sparam.sched_priority = (prio_mid + prio_max) / 2;
-  status = pthread_attr_setschedparam(&attr,&sparam);
+  status = pthread_attr_setschedparam(&attr, &sparam);
   if (status != OK)
     {
-      printf("semtimed_test: ERROR: pthread_attr_setschedparam failed, status=%d\n",  status);
+      printf("semtimed_test: ERROR: "
+             "pthread_attr_setschedparam failed, status=%d\n",  status);
     }
   else
     {
-      printf("semtimed_test: Set thread 1 priority to %d\n",  sparam.sched_priority);
+      printf("semtimed_test: Set thread 1 priority to %d\n",
+              sparam.sched_priority);
     }
 
   printf("semtimed_test: Starting poster thread 3\n");
   status = pthread_attr_init(&attr);
   if (status != 0)
     {
-      printf("semtimed_test: ERROR: pthread_attr_init failed, status=%d\n",  status);
+      printf("semtimed_test: ERROR: pthread_attr_init failed, status=%d\n",
+              status);
     }
 
   sparam.sched_priority = (prio_min + prio_mid) / 2;
-  status = pthread_attr_setschedparam(&attr,&sparam);
+  status = pthread_attr_setschedparam(&attr, &sparam);
   if (status != OK)
     {
-      printf("semtimed_test: pthread_attr_setschedparam failed, status=%d\n",  status);
+      printf("semtimed_test: pthread_attr_setschedparam failed, status=%d\n",
+              status);
     }
   else
     {
-      printf("semtimed_test: Set thread 3 priority to %d\n",  sparam.sched_priority);
+      printf("semtimed_test: Set thread 3 priority to %d\n",
+              sparam.sched_priority);
     }
 
   status = pthread_create(&poster_thread, &attr, poster_func, NULL);
   if (status != 0)
     {
-      printf("semtimed_test: ERROR: Poster thread creation failed: %d\n",  status);
+      printf("semtimed_test: ERROR: Poster thread creation failed: %d\n",
+              status);
       sem_destroy(&sem);
       return;
     }
@@ -226,7 +225,8 @@ void semtimed_test(void)
 
   if (status < 0)
     {
-      printf("semtimed_test: ERROR: sem_timedwait failed with: %d\n", errcode);
+      printf("semtimed_test: ERROR: sem_timedwait failed with: %d\n",
+              errcode);
     }
   else
     {

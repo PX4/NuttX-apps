@@ -1,35 +1,20 @@
 /****************************************************************************
- * system/zmodem/zm_utils.c
+ * apps/system/zmodem/zm_utils.c
  *
- *   Copyright (C) 2013, 2018 Gregory Nutt. All rights reserved.
- *   Author: Gregory Nutt <gnutt@nuttx.org>
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.  The
+ * ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- * 3. Neither the name NuttX nor the names of its contributors may be
- *    used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
  ****************************************************************************/
 
@@ -57,10 +42,16 @@
  * Public Data
  ****************************************************************************/
 
-const uint8_t g_zeroes[4] = { 0, 0, 0, 0 };
+const uint8_t g_zeroes[4] =
+{
+  0,
+  0,
+  0,
+  0
+};
 
 /****************************************************************************
- * Public Function Protypes
+ * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
@@ -92,7 +83,7 @@ uint32_t zm_bytobe32(FAR const uint8_t *val8)
 
 void zm_be32toby(uint32_t val32, FAR uint8_t *val8)
 {
-  val8[0] = (uint8_t)( val32        & 0xff);
+  val8[0] = (uint8_t)(val32        & 0xff);
   val8[1] = (uint8_t)((val32 >> 8)  & 0xff);
   val8[2] = (uint8_t)((val32 >> 16) & 0xff);
   val8[3] = (uint8_t)((val32 >> 24) & 0xff);
@@ -169,9 +160,9 @@ ssize_t zm_read(int fd, FAR uint8_t *buffer, size_t buflen)
 {
   ssize_t nread;
 
-  /* Read reading as necessary until the requested buffer data is successfully
-   * read or until an end of file indication or irrecoverable error is
-   * encountered.
+  /* Read reading as necessary until the requested buffer data is
+   * successfully read or until an end of file indication or irrecoverable
+   * error is encountered.
    *
    * This loop will only execute if the read is interrupted by a signal.
    */
@@ -179,8 +170,10 @@ ssize_t zm_read(int fd, FAR uint8_t *buffer, size_t buflen)
   nread = 0;
   do
     {
-      /* Get the next gulp of data from the file.  On success, read will return
-       * (1) nread > 0 and nread <= buflen, (2) nread == 0 on end of file, or
+      /* Get the next gulp of data from the file.
+       * On success, read will return
+       * (1) nread > 0 and nread <= buflen,
+       * (2) nread == 0 on end of file, or
        * (3) nread < 0 on a read error.
        */
 
@@ -256,15 +249,15 @@ ssize_t zm_write(int fd, FAR const uint8_t *buffer, size_t buflen)
   for (remaining = buflen; remaining > 0; )
     {
 #if CONFIG_SYSTEM_ZMODEM_WRITESIZE > 0
-       if (remaining > CONFIG_SYSTEM_ZMODEM_WRITESIZE)
-         {
-           wrsize = CONFIG_SYSTEM_ZMODEM_WRITESIZE;
-         }
-       else
+      if (remaining > CONFIG_SYSTEM_ZMODEM_WRITESIZE)
+        {
+          wrsize = CONFIG_SYSTEM_ZMODEM_WRITESIZE;
+        }
+      else
 #endif
-         {
-           wrsize = remaining;
-         }
+        {
+          wrsize = remaining;
+        }
 
       /* Get the next gulp of data from the file */
 
@@ -400,13 +393,13 @@ int zm_writefile(int fd, FAR const uint8_t *buffer, size_t buflen, bool zcnl)
                       ret     = zm_write(fd, (FAR uint8_t *)"\n", 1);
                       newline = true;
                     }
-               }
+                }
             }
           else
             {
               /* Increment the number of bytes we need to write beginning at
-               * start.  We want to write as many contiguous bytes as possible
-               * for performance reasons.
+               * start.  We want to write as many contiguous bytes as
+               * possible for performance reasons.
                */
 
               nbytes++;
@@ -462,7 +455,8 @@ uint32_t zm_filecrc(FAR struct zm_state_s *pzm, FAR const char *filename)
   /* Calculate the file CRC */
 
   crc = 0xffffffff;
-  while ((nread = zm_read(fd, pzm->scratch, CONFIG_SYSTEM_ZMODEM_SNDBUFSIZE)) > 0)
+  while ((nread = zm_read(fd, pzm->scratch,
+                          CONFIG_SYSTEM_ZMODEM_SNDBUFSIZE)) > 0)
     {
       crc = crc32part(pzm->scratch, nread, crc);
     }

@@ -1,35 +1,20 @@
 /****************************************************************************
- * testing/ostest/aio.c
+ * apps/testing/ostest/aio.c
  *
- *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
- *   Author: Gregory Nutt <gnutt@nuttx.org>
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.  The
+ * ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- * 3. Neither the name NuttX nor the names of its contributors may be
- *    used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
  ****************************************************************************/
 
@@ -68,6 +53,7 @@
 /****************************************************************************
  * Private Data
  ****************************************************************************/
+
 /* Constant write buffers */
 
 static const char g_wrbuffer1[] = "This is write buffer #1\n";
@@ -76,15 +62,13 @@ static char g_rdbuffer[AIO_RDBUFFER_SIZE];
 
 /* AIO control blocks:  write, nop, write, NULL, read */
 
-
-static struct aiocb g_aiocbs[AIO_NCTRLBLKS-1];
+static struct aiocb g_aiocbs[AIO_NCTRLBLKS - 1];
 static struct aiocb *g_aiocb[AIO_NCTRLBLKS];
 
 static struct aiocb * const g_aiocb_init[AIO_NCTRLBLKS] =
 {
   &g_aiocbs[0], &g_aiocbs[1], &g_aiocbs[2], NULL, &g_aiocbs[3]
 };
-
 
 static FAR void * const g_buffers[AIO_NCTRLBLKS] =
 {
@@ -125,7 +109,7 @@ static void init_aiocb(bool signal)
   FAR struct aiocb *aiocbp;
   int i;
 
-  memset(g_aiocbs, 0xff, (AIO_NCTRLBLKS-1)*sizeof(struct aiocb));
+  memset(g_aiocbs, 0xff, (AIO_NCTRLBLKS - 1) * sizeof(struct aiocb));
   memset(g_rdbuffer, 0xff, AIO_RDBUFFER_SIZE);
 
   for (i = 0; i < AIO_NCTRLBLKS; i++)
@@ -135,7 +119,8 @@ static void init_aiocb(bool signal)
 
       if (aiocbp)
         {
-          aiocbp->aio_sigevent.sigev_notify = signal ? SIGEV_SIGNAL : SIGEV_NONE;
+          aiocbp->aio_sigevent.sigev_notify =
+                               signal ? SIGEV_SIGNAL : SIGEV_NONE;
           aiocbp->aio_sigevent.sigev_signo  = SIGUSR1;
 #ifdef CONFIG_SIG_EVTHREAD
           aiocbp->aio_sigevent.sigev_notify_function   = NULL;
@@ -148,7 +133,7 @@ static void init_aiocb(bool signal)
           aiocbp->aio_fildes     = g_fildes;
           aiocbp->aio_reqprio    = 0;
           aiocbp->aio_lio_opcode = g_opcode[i];
-         }
+        }
     }
 }
 
@@ -309,10 +294,11 @@ void aio_test(void)
   /* Case 1: Poll for transfer complete */
 
   printf("AIO test case 1: Poll for transfer complete\n");
-  g_fildes = open(AIO_FILEPATH, O_RDWR|O_CREAT|O_TRUNC);
+  g_fildes = open(AIO_FILEPATH, O_RDWR | O_CREAT | O_TRUNC);
   if (g_fildes < 0)
     {
-      printf("aio_test: ERROR: Failed to open %s: %d\n", AIO_FILEPATH, errno);
+      printf("aio_test: ERROR: Failed to open %s: %d\n",
+             AIO_FILEPATH, errno);
       goto errout_with_procmask;
     }
 
@@ -326,7 +312,7 @@ void aio_test(void)
 
   do
     {
-      usleep(500*1000);
+      usleep(500 * 1000);
       ret = check_done();
     }
   while (ret < 0);
@@ -340,13 +326,14 @@ void aio_test(void)
    * task end of the last test case -- especially the dangling SIGPOLL.
    */
 
-  usleep(500*1000);
+  usleep(500 * 1000);
 
   printf("AIO test case 2: Use LIO_WAIT for transfer complete\n");
-  g_fildes = open(AIO_FILEPATH, O_RDWR|O_CREAT|O_TRUNC);
+  g_fildes = open(AIO_FILEPATH, O_RDWR | O_CREAT | O_TRUNC);
   if (g_fildes < 0)
     {
-      printf("aio_test: ERROR: Failed to open %s: %d\n", AIO_FILEPATH, errno);
+      printf("aio_test: ERROR: Failed to open %s: %d\n",
+             AIO_FILEPATH, errno);
       goto errout_with_procmask;
     }
 
@@ -374,13 +361,14 @@ void aio_test(void)
    * task end of the last test case -- especially the dangling SIGPOLL.
    */
 
-  usleep(500*1000);
+  usleep(500 * 1000);
 
   printf("AIO test case 3: Use aio_suspend for transfer complete\n");
-  g_fildes = open(AIO_FILEPATH, O_RDWR|O_CREAT|O_TRUNC);
+  g_fildes = open(AIO_FILEPATH, O_RDWR | O_CREAT | O_TRUNC);
   if (g_fildes < 0)
     {
-      printf("aio_test: ERROR: Failed to open %s: %d\n", AIO_FILEPATH, errno);
+      printf("aio_test: ERROR: Failed to open %s: %d\n",
+              AIO_FILEPATH, errno);
       goto errout_with_procmask;
     }
 
@@ -396,7 +384,8 @@ void aio_test(void)
   for (i = 1; i <= AIO_NCTRLBLKS; i++)
     {
       printf("  Calling aio_suspend #%d\n", i);
-      ret = aio_suspend((FAR const struct aiocb *const *)g_aiocb, AIO_NCTRLBLKS, NULL);
+      ret = aio_suspend((FAR const struct aiocb *const *)g_aiocb,
+                         AIO_NCTRLBLKS, NULL);
       if (ret < 0)
         {
           printf("aio_test: ERROR: aio_suspend failed: %d\n", errno);
@@ -421,7 +410,8 @@ void aio_test(void)
 
   if (total != AIO_NCTRLBLKS)
     {
-      printf("aio_test: ERROR: Total is %d, should be %d\n", total, AIO_NCTRLBLKS);
+      printf("aio_test: ERROR: Total is %d, should be %d\n",
+              total, AIO_NCTRLBLKS);
       goto errout_with_fildes;
     }
 
@@ -434,13 +424,14 @@ void aio_test(void)
    * task end of the last test case -- especially the dangling SIGPOLL.
    */
 
-  usleep(500*1000);
+  usleep(500 * 1000);
 
   printf("AIO test case 4: Use individual signals for transfer complete\n");
-  g_fildes = open(AIO_FILEPATH, O_RDWR|O_CREAT|O_TRUNC);
+  g_fildes = open(AIO_FILEPATH, O_RDWR | O_CREAT | O_TRUNC);
   if (g_fildes < 0)
     {
-      printf("aio_test: ERROR: Failed to open %s: %d\n", AIO_FILEPATH, errno);
+      printf("aio_test: ERROR: Failed to open %s: %d\n",
+              AIO_FILEPATH, errno);
       goto errout_with_procmask;
     }
 
@@ -471,7 +462,8 @@ void aio_test(void)
                 }
               else
                 {
-                  printf("aio_test: ERROR: sigwaitinfo failed: %d\n", errcode);
+                  printf("aio_test: ERROR: sigwaitinfo failed: %d\n",
+                          errcode);
                   goto errout_with_fildes;
                 }
             }
@@ -492,13 +484,15 @@ void aio_test(void)
    * task end of the last test case -- especially the dangling SIGPOLL.
    */
 
-  usleep(500*1000);
+  usleep(500 * 1000);
 
-  printf("AIO test case 5: Use list complete signal for transfer complete\n");
-  g_fildes = open(AIO_FILEPATH, O_RDWR|O_CREAT|O_TRUNC);
+  printf("AIO test case 5:"
+         " Use list complete signal for transfer complete\n");
+  g_fildes = open(AIO_FILEPATH, O_RDWR | O_CREAT | O_TRUNC);
   if (g_fildes < 0)
     {
-      printf("aio_test: ERROR: Failed to open %s: %d\n", AIO_FILEPATH, errno);
+      printf("aio_test: ERROR: Failed to open %s: %d\n",
+              AIO_FILEPATH, errno);
       goto errout_with_procmask;
     }
 
@@ -533,10 +527,11 @@ void aio_test(void)
                 }
               else
                 {
-                  printf("aio_test: ERROR: sigwaitinfo failed: %d\n", errcode);
+                  printf("aio_test: ERROR: sigwaitinfo failed: %d\n",
+                          errcode);
                   goto errout_with_fildes;
                 }
-          }
+            }
         }
     }
   while (ret < 0);
@@ -550,13 +545,14 @@ void aio_test(void)
    * task end of the last test case -- especially the dangling SIGPOLL.
    */
 
-  usleep(500*1000);
+  usleep(500 * 1000);
 
   printf("AIO test case 6: Cancel I/O by AIO control block\n");
-  g_fildes = open(AIO_FILEPATH, O_RDWR|O_CREAT|O_TRUNC);
+  g_fildes = open(AIO_FILEPATH, O_RDWR | O_CREAT | O_TRUNC);
   if (g_fildes < 0)
     {
-      printf("aio_test: ERROR: Failed to open %s: %d\n", AIO_FILEPATH, errno);
+      printf("aio_test: ERROR: Failed to open %s: %d\n",
+              AIO_FILEPATH, errno);
       goto errout_with_procmask;
     }
 
@@ -579,7 +575,7 @@ void aio_test(void)
 
   do
     {
-      usleep(500*1000);
+      usleep(500 * 1000);
       ret = check_done();
     }
   while (ret < 0);
@@ -593,13 +589,14 @@ void aio_test(void)
    * task end of the last test case -- especially the dangling SIGPOLL.
    */
 
-  usleep(500*1000);
+  usleep(500 * 1000);
 
   printf("AIO test case 7:Cancel I/O by file descriptor\n");
-  g_fildes = open(AIO_FILEPATH, O_RDWR|O_CREAT|O_TRUNC);
+  g_fildes = open(AIO_FILEPATH, O_RDWR | O_CREAT | O_TRUNC);
   if (g_fildes < 0)
     {
-      printf("aio_test: ERROR: Failed to open %s: %d\n", AIO_FILEPATH, errno);
+      printf("aio_test: ERROR: Failed to open %s: %d\n",
+              AIO_FILEPATH, errno);
       goto errout_with_procmask;
     }
 
@@ -622,7 +619,7 @@ void aio_test(void)
 
   do
     {
-      usleep(500*1000);
+      usleep(500 * 1000);
       ret = check_done();
     }
   while (ret < 0);

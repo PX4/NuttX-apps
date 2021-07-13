@@ -1,35 +1,20 @@
 /****************************************************************************
- * testing/ostest/robust.c
+ * apps/testing/ostest/robust.c
  *
- *   Copyright (C) 2017 Gregory Nutt. All rights reserved.
- *   Author: Gregory Nutt <gnutt@nuttx.org>
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.  The
+ * ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- * 3. Neither the name NuttX nor the names of its contributors may be
- *    used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *
  ****************************************************************************/
 
@@ -66,12 +51,14 @@ static FAR void *robust_waiter(FAR void *parameter)
   status = pthread_mutex_lock(&g_robust_mutex);
   if (status != 0)
     {
-       printf("thread_waiter: ERROR: pthread_mutex_lock failed, status=%d\n", status);
+       printf("thread_waiter: ERROR: pthread_mutex_lock failed, status=%d\n",
+               status);
     }
 
   if (status != 0)
     {
-       printf("robust_waiter: ERROR: pthread_mutex_lock failed, status=%d\n", status);
+       printf("robust_waiter: ERROR: pthread_mutex_lock failed, status=%d\n",
+               status);
     }
   else
     {
@@ -102,7 +89,8 @@ void robust_test(void)
   status = pthread_mutexattr_init(&mattr);
   if (status != 0)
     {
-      printf("robust_test: ERROR: pthread_mutexattr_init failed, status=%d\n",
+      printf("robust_test: ERROR: "
+             "pthread_mutexattr_init failed, status=%d\n",
              status);
       nerrors++;
     }
@@ -110,7 +98,8 @@ void robust_test(void)
   status = pthread_mutexattr_setrobust(&mattr, PTHREAD_MUTEX_ROBUST);
   if (status != 0)
     {
-      printf("robust_test: ERROR: pthread_mutexattr_setrobust failed, status=%d\n",
+      printf("robust_test: ERROR: "
+             "pthread_mutexattr_setrobust failed, status=%d\n",
              status);
       nerrors++;
     }
@@ -138,7 +127,8 @@ void robust_test(void)
   status = pthread_attr_setstacksize(&pattr, STACKSIZE);
   if (status != 0)
     {
-      printf("robust_test: ERROR: pthread_attr_setstacksize failed, status=%d\n",
+      printf("robust_test: ERROR: "
+             "pthread_attr_setstacksize failed, status=%d\n",
              status);
       nerrors++;
     }
@@ -150,7 +140,8 @@ void robust_test(void)
   status = pthread_create(&waiter, &pattr, robust_waiter, NULL);
   if (status != 0)
     {
-      printf("robust_test: ERROR: pthread_create failed, status=%d\n", status);
+      printf("robust_test: ERROR: "
+             "pthread_create failed, status=%d\n", status);
       printf("             ERROR: Terminating test\n");
       nerrors++;
       return;
@@ -172,12 +163,15 @@ void robust_test(void)
     }
   else if (status != EOWNERDEAD)
     {
-      printf("robust_test: ERROR: pthread_mutex_lock failed with %d\n", status);
+      printf("robust_test: ERROR: pthread_mutex_lock failed with %d\n",
+              status);
       printf("             ERROR: expected %d (EOWNERDEAD)\n", EOWNERDEAD);
       nerrors++;
     }
 
-  /* Try again, this should return immediately, still failing with EOWNERDEAD */
+  /* Try again,
+   * this should return immediately, still failing with EOWNERDEAD
+   */
 
   printf("robust_test: Take the lock again\n");
   status = pthread_mutex_lock(&g_robust_mutex);
@@ -188,7 +182,8 @@ void robust_test(void)
     }
   else if (status != EOWNERDEAD)
     {
-      printf("robust_test: ERROR: pthread_mutex_lock failed with %d\n", status);
+      printf("robust_test: ERROR: pthread_mutex_lock failed with %d\n",
+              status);
       printf("             ERROR: expected %d (EOWNERDEAD)\n", EOWNERDEAD);
       nerrors++;
     }
@@ -199,7 +194,8 @@ void robust_test(void)
   status = pthread_mutex_consistent(&g_robust_mutex);
   if (status != 0)
     {
-      printf("robust_test: ERROR: pthread_mutex_consistent failed: %d\n", status);
+      printf("robust_test: ERROR: pthread_mutex_consistent failed: %d\n",
+              status);
       nerrors++;
     }
 
@@ -207,7 +203,8 @@ void robust_test(void)
   status = pthread_mutex_lock(&g_robust_mutex);
   if (status != 0)
     {
-      printf("robust_test: ERROR: pthread_mutex_lock failed with: %d\n", status);
+      printf("robust_test: ERROR: pthread_mutex_lock failed with: %d\n",
+              status);
       nerrors++;
     }
 
@@ -227,7 +224,8 @@ void robust_test(void)
       printf("robust_test: waiter exited with result=%p\n", result);
       if (result != NULL)
         {
-          printf("robust_test: ERROR: expected result=%p\n", PTHREAD_CANCELED);
+          printf("robust_test: ERROR: expected result=%p\n",
+                  PTHREAD_CANCELED);
           nerrors++;
         }
     }
@@ -237,14 +235,16 @@ void robust_test(void)
   status = pthread_mutex_unlock(&g_robust_mutex);
   if (status != 0)
     {
-      printf("robust_test: ERROR: pthread_mutex_unlock failed, status=%d\n", status);
+      printf("robust_test: ERROR: pthread_mutex_unlock failed, status=%d\n",
+              status);
       nerrors++;
     }
 
   status = pthread_mutex_destroy(&g_robust_mutex);
   if (status != 0)
     {
-      printf("robust_test: ERROR: pthread_mutex_unlock failed, status=%d\n", status);
+      printf("robust_test: ERROR: pthread_mutex_unlock failed, status=%d\n",
+              status);
       nerrors++;
     }
 

@@ -30,6 +30,7 @@
 #include <spawn.h>
 #include <assert.h>
 #include <debug.h>
+#include <errno.h>
 
 #include "nshlib/nshlib.h"
 
@@ -59,7 +60,7 @@
 
 int system(FAR const char *cmd)
 {
-  FAR char *argv[3];
+  FAR char *argv[4];
   struct sched_param param;
   posix_spawnattr_t attr;
   pid_t pid;
@@ -127,16 +128,21 @@ int system(FAR const char *cmd)
 
   /* Spawn nsh_system() which will execute the command under the shell. */
 
-  argv[0] = "-c";
-  argv[1] = (FAR char *)cmd;
-  argv[2] = NULL;
+  argv[1] = "-c";
+  argv[2] = (FAR char *)cmd;
+  argv[3] = NULL;
 
 #ifdef CONFIG_SYSTEM_SYSTEM_SHPATH
-  errcode = posix_spawn(&pid, CONFIG_SYSTEM_SYSTEM_SHPATH,  NULL, &attr,
+  argv[0] = CONFIG_SYSTEM_SYSTEM_SHPATH;
+  errcode = posix_spawn(&pid, argv[0],  NULL, &attr,
                         argv, (FAR char * const *)NULL);
 #else
-  errcode = task_spawn(&pid, "system", nsh_system, NULL, &attr,
-                       argv, (FAR char * const *)NULL);
+  pid = task_spawn("system", nsh_system, NULL, &attr,
+                   argv + 1, (FAR char * const *)NULL);
+  if (pid < 0)
+    {
+      errcode = -pid;
+    }
 #endif
 
   /* Release the attributes and check for an error from the spawn operation */
