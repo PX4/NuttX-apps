@@ -1,0 +1,3 @@
+[submodule "microros"]
+	path = microros
+	url = git@github.com:micro-ROS/micro_ros_nuttx_app.git
