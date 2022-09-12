@@ -36,6 +36,9 @@
 #include <unistd.h>
 
 #include <nuttx/fs/fs.h>
+#ifdef CONFIG_FAT_DMAMEMORY
+#  include <nuttx/fs/fat.h>
+#endif
 
 #include "fsutils/mkfatfs.h"
 #include "fat32.h"
@@ -55,6 +58,41 @@
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
+
+/****************************************************************************
+ * Name: fat_alloc_sector_buffer
+ *
+ * Description:
+ *   Wrapper function to use fat_dma_alloc or alloc
+ *
+ ****************************************************************************/
+
+static uint8_t *fat_alloc_sector_buffer(FAR struct fat_var_s *var)
+{
+#if defined(CONFIG_FAT_DMAMEMORY)
+  return (uint8_t *) fat_dma_alloc(var->fv_sectorsize);
+#else
+  return (uint8_t *) malloc(var->fv_sectorsize);
+#endif
+}
+
+/****************************************************************************
+ * Name: fat_free_sector_buffer
+ *
+ * Description:
+ *   Wrapper function to use fat_dma_free or free
+ *
+ ****************************************************************************/
+
+static void fat_free_sector_buffer(FAR struct fat_var_s *var)
+{
+#if defined(CONFIG_FAT_DMAMEMORY)
+  fat_dma_free(var->fv_sect, var->fv_sectorsize);
+#else
+  free(var->fv_sect);
+#endif
+  var->fv_sect = NULL;
+}
 
 /****************************************************************************
  * Name: fat_systime2fattime
@@ -355,7 +393,7 @@ int mkfatfs(FAR const char *pathname, FAR struct fat_format_s *fmt)
    * Lets align it as needed
    */
 
-  var.fv_sect = (FAR uint8_t *)fat_buffer_alloc(var.fv_sectorsize);
+  var.fv_sect = fat_alloc_sector_buffer(&var);
   if (!var.fv_sect)
     {
       ferr("ERROR: Failed to allocate working buffers\n");
@@ -378,7 +416,7 @@ errout:
 
   if (var.fv_sect)
     {
-      free(var.fv_sect);
+      fat_free_sector_buffer(&var);
     }
 
   /* Return any reported errors */
