@@ -50,6 +50,9 @@
 #include <sys/boardctl.h>
 
 #include "netutils/netlib.h"
+#if defined(CONFIG_NETUTILS_DHCPC) || defined(CONFIG_NETINIT_DNS)
+#  include "netutils/dhcpc.h"
+#endif
 
 #ifdef CONFIG_NET_6LOWPAN
 #  include <nuttx/net/sixlowpan.h>
@@ -199,22 +202,46 @@
 #  undef CONFIG_NETINIT_MONITOR
 #endif
 
-/* While the network is up, the network monitor really does nothing.  It
- * will wait for a very long time while waiting, it can be awakened by a
- * signal indicating a change in network status.
+/* We need a valid IP domain (any domain) to create a socket that we can use
+ * to communicate with the network device.
  */
 
-#ifdef CONFIG_SYSTEM_TIME64
-#  define LONG_TIME_SEC    (60*60)   /* One hour in seconds */
-#else
-#  define LONG_TIME_SEC    (5*60)    /* Five minutes in seconds */
+#if defined(CONFIG_NET_IPv4)
+#  define AF_INETX AF_INET
+#elif defined(CONFIG_NET_IPv6)
+#  define AF_INETX AF_INET6
 #endif
 
-#define SHORT_TIME_SEC     (2)       /* 2 seconds */
+/* If using signal notification, raise by a the PHY, then while the network
+ * is up, the network monitor really does nothing.  It will wait for a very
+ * long time while waiting, it can be awakened by a signal indicating a
+ * change in network status.
+ *
+ * If the network monitor is used in polled mode these values are set by the
+ * CONFIG_NETINIT_LOSS_POLL_RATE and CONFIG_NETINIT_ESTABLISH_POLL_RATE
+ */
+
+#if !(defined(CONFIG_ARCH_PHY_POLLED))
+#  define LONG_TIME_SEC    (60*60) /* One hour in seconds */
+#  define SHORT_TIME_SEC   (2)     /* 2 seconds */
+#else
+#  define LONG_TIME_SEC    (CONFIG_NETINIT_LOSS_POLL_RATE)
+#  define SHORT_TIME_SEC   (CONFIG_NETINIT_ESTABLISH_POLL_RATE)
+#endif
 
 /****************************************************************************
  * Private Data
  ****************************************************************************/
+
+#ifdef CONFIG_NETUTILS_DHCPC
+static struct dhcpc_state g_ds;
+#endif
+#if defined(CONFIG_FSUTILS_IPCFG)
+static struct ipv4cfg_s g_ipv4cfg;
+#  if defined(CONFIG_NETINIT_DHCP_FALLBACK) && CONFIG_NETINIT_DHCP_FALLBACK > 0
+#    define USE_DHCP_FALLBACK 1
+#  endif
+#endif
 
 #ifdef CONFIG_NETINIT_MONITOR
 static sem_t g_notify_sem;
@@ -376,7 +403,6 @@ static inline void netinit_set_ipv4addrs(void)
 {
   struct in_addr addr;
 #ifdef CONFIG_FSUTILS_IPCFG
-  struct ipv4cfg_s ipv4cfg;
   int ret;
 
   /* Attempt to obtain IPv4 address configuration from the IP configuration
@@ -387,17 +413,17 @@ static inline void netinit_set_ipv4addrs(void)
   netinit_checkpath();
 #endif
 
-  ret = ipcfg_read(NET_DEVNAME, (FAR struct ipcfg_s *)&ipv4cfg, AF_INET);
+  ret = ipcfg_read(NET_DEVNAME, (FAR struct ipcfg_s *)&g_ipv4cfg, AF_INET);
 #ifdef CONFIG_NETUTILS_DHCPC
-  if (ret >= 0 && ipv4cfg.proto != IPv4PROTO_NONE)
+  if (ret >= 0 && g_ipv4cfg.proto != IPv4PROTO_NONE)
 #else
-  if (ret >= 0 && IPCFG_HAVE_STATIC(ipv4cfg.proto))
+  if (ret >= 0 && IPCFG_HAVE_STATIC(g_ipv4cfg.proto))
 #endif
     {
       /* Check if we are using DHCPC */
 
 #ifdef CONFIG_NETUTILS_DHCPC
-      if (IPCFG_USE_DHCP(ipv4cfg.proto))
+      if (IPCFG_USE_DHCP(g_ipv4cfg.proto))
         {
           g_use_dhcpc = true;
           addr.s_addr = 0;
@@ -410,9 +436,9 @@ static inline void netinit_set_ipv4addrs(void)
 #ifdef CONFIG_NETINIT_IPADDR
           /* Check if we have a static IP address in the configuration file */
 
-          if (IPCFG_HAVE_STATIC(ipv4cfg.proto))
+          if (IPCFG_HAVE_STATIC(g_ipv4cfg.proto))
             {
-              addr.s_addr = ipv4cfg.ipaddr;
+              addr.s_addr = g_ipv4cfg.ipaddr;
             }
           else
             {
@@ -425,7 +451,7 @@ static inline void netinit_set_ipv4addrs(void)
 #else
           /* Use whatever was provided in the file (might be zero) */
 
-          addr.s_addr = ipv4cfg.ipaddr;
+          addr.s_addr = g_ipv4cfg.ipaddr;
 #endif
         }
 
@@ -433,16 +459,16 @@ static inline void netinit_set_ipv4addrs(void)
 
       /* Set up the remaining addresses */
 
-      if (IPCFG_HAVE_STATIC(ipv4cfg.proto))
+      if (IPCFG_HAVE_STATIC(g_ipv4cfg.proto))
         {
           /* Set up the default router address */
 
-          addr.s_addr = ipv4cfg.router;
+          addr.s_addr = g_ipv4cfg.router;
           netlib_set_dripv4addr(NET_DEVNAME, &addr);
 
           /* Setup the subnet mask */
 
-          addr.s_addr = ipv4cfg.netmask;
+          addr.s_addr = g_ipv4cfg.netmask;
           netlib_set_ipv4netmask(NET_DEVNAME, &addr);
         }
 
@@ -476,7 +502,7 @@ static inline void netinit_set_ipv4addrs(void)
 #ifdef CONFIG_NETINIT_DNS
       /* Set up the DNS address.  Was one provided in the configuration? */
 
-      if (ipv4cfg.dnsaddr == 0)
+      if (g_ipv4cfg.dnsaddr == 0)
         {
           /* No, use the configured default */
 
@@ -484,7 +510,7 @@ static inline void netinit_set_ipv4addrs(void)
         }
       else
         {
-          addr.s_addr = ipv4cfg.dnsaddr;
+          addr.s_addr = g_ipv4cfg.dnsaddr;
         }
 
       netlib_set_ipv4dnsaddr(&addr);
@@ -613,6 +639,68 @@ static void netinit_set_ipaddrs(void)
 #endif
 
 /****************************************************************************
+ * Name: netinit_dhcp()
+ *
+ * Description:
+ *   Renew or obtain a IP Address over DHCP
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_NETUTILS_DHCPC
+static int netinit_dhcp(struct dhcpc_state *ds)
+{
+  uint8_t mac[IFHWADDRLEN];
+  FAR void *handle;
+  int ret = -EAGAIN;
+#ifdef CONFIG_FSUTILS_IPCFG
+  if ((g_ipv4cfg.proto & IPv4PROTO_DHCP) == 0)
+    {
+      return -ENOSYS;
+    }
+#endif
+
+  /* Get the MAC address of the NIC */
+
+  netlib_getmacaddr(NET_DEVNAME, mac);
+
+  /* Set up the DHCPC modules */
+
+  handle = dhcpc_open(NET_DEVNAME, &mac, IFHWADDRLEN);
+  if (handle == NULL)
+    {
+      return ret;
+    }
+
+      netlib_getmacaddr(NET_DEVNAME, mac);
+
+  ret = dhcpc_request(handle, ds) ;
+
+  if (ret == OK)
+    {
+      netlib_set_ipv4addr(NET_DEVNAME, &ds->ipaddr);
+
+      if (ds->netmask.s_addr != 0)
+        {
+          netlib_set_ipv4netmask(NET_DEVNAME, &ds->netmask);
+        }
+
+      if (ds->default_router.s_addr != 0)
+        {
+          netlib_set_dripv4addr(NET_DEVNAME, &ds->default_router);
+        }
+
+      if (ds->dnsaddr[0].s_addr != 0)
+        {
+          netlib_set_ipv4dnsaddr(&ds->dnsaddr[0]);
+        }
+
+    }
+  dhcpc_close(handle);
+  return ret;
+}
+#endif
+
+/****************************************************************************
  * Name: netinit_net_bringup()
  *
  * Description:
@@ -646,13 +734,7 @@ static void netinit_net_bringup(void)
 #endif
 
 #ifdef CONFIG_NETUTILS_DHCPC
-  if (g_use_dhcpc)
-    {
-      if (netlib_obtain_ipv4addr(NET_DEVNAME) < 0)
-        {
-          return;
-        }
-    }
+  netinit_dhcp(&g_ds);
 #endif
 
 #ifdef CONFIG_NETUTILS_NTPCLIENT
@@ -689,6 +771,10 @@ static void netinit_configure(void)
 #ifndef CONFIG_NETINIT_NETLOCAL
   /* Bring the network up. */
 
+#ifdef CONFIG_NETUTILS_DHCPC
+    memset(&g_ds, 0, sizeof(g_ds));
+#endif
+
   netinit_net_bringup();
 #endif
 #endif /* NETINIT_HAVE_NETDEV */
@@ -702,7 +788,7 @@ static void netinit_configure(void)
  *
  ****************************************************************************/
 
-#ifdef CONFIG_NETINIT_MONITOR
+#if defined(CONFIG_NETINIT_MONITOR) && !defined(CONFIG_ARCH_PHY_POLLED)
 static void netinit_signal(int signo, FAR siginfo_t *siginfo,
                            FAR void *context)
 {
@@ -738,8 +824,16 @@ static int netinit_monitor(void)
   struct timespec abstime;
   struct timespec reltime;
   struct ifreq ifr;
+#if !defined(CONFIG_ARCH_PHY_POLLED)
   struct sigaction act;
   struct sigaction oact;
+#endif
+#ifdef CONFIG_NETUTILS_DHCPC
+  struct timespec dhcprenew;
+#  if defined(USE_DHCP_FALLBACK)
+  int dhcp_fail_count = 0;
+#  endif
+#endif
   bool devup;
   int ret;
   int sd;
@@ -764,6 +858,7 @@ static int netinit_monitor(void)
       goto errout;
     }
 
+#if !defined(CONFIG_ARCH_PHY_POLLED)
   /* Attach a signal handler so that we do not lose PHY events */
 
   act.sa_sigaction = netinit_signal;
@@ -779,6 +874,19 @@ static int netinit_monitor(void)
       goto errout_with_socket;
     }
 
+#endif
+
+#ifdef CONFIG_NETUTILS_DHCPC
+  /* We assume that the netinit_thread was able to get a lease
+   * If it did we set up the renew point at lease_time / 2
+   * if it did not the renew point is now.
+   */
+
+  DEBUGVERIFY(clock_gettime(CLOCK_REALTIME, &dhcprenew));
+  dhcprenew.tv_sec  += g_ds.lease_time / 2;
+  dhcprenew.tv_nsec = 0;
+#endif
+
   /* Now loop, waiting for changes in link status */
 
   for (; ; )
@@ -791,6 +899,7 @@ static int netinit_monitor(void)
       ifr.ifr_mii_notify_event.sigev_notify = SIGEV_SIGNAL;
       ifr.ifr_mii_notify_event.sigev_signo  = CONFIG_NETINIT_SIGNO;
 
+#if !defined(CONFIG_ARCH_PHY_POLLED)
       ret = ioctl(sd, SIOCMIINOTIFY, (unsigned long)&ifr);
       if (ret < 0)
         {
@@ -801,6 +910,7 @@ static int netinit_monitor(void)
           goto errout_with_sigaction;
         }
 
+#endif
       /* Does the driver think that the link is up or down? */
 
       ret = ioctl(sd, SIOCGIFFLAGS, (unsigned long)&ifr);
@@ -890,6 +1000,80 @@ static int netinit_monitor(void)
             {
               /* The link is still up.  Take a long, well-deserved rest */
 
+#ifdef CONFIG_NETUTILS_DHCPC
+              /* Get Current time */
+
+              DEBUGVERIFY(clock_gettime(CLOCK_REALTIME, &abstime));
+
+              /* Did we ever get a lease */
+#ifdef CONFIG_FSUTILS_IPCFG
+              if (g_ds.lease_time == 0 && (g_ipv4cfg.proto & IPv4PROTO_DHCP))
+#else
+              if (g_ds.lease_time == 0)
+#endif
+                {
+                  /* No so, let's try to bring up the network */
+
+                  netinit_net_bringup();
+
+                  /* Did we get a lease */
+
+                  if (g_ds.lease_time != 0)
+                    {
+                      /* Yes, set next renewal time */
+
+                      DEBUGVERIFY(clock_gettime(CLOCK_REALTIME, &dhcprenew));
+                      dhcprenew.tv_sec  += g_ds.lease_time / 2;
+                    }
+#if defined(USE_DHCP_FALLBACK)
+                  else
+                    {
+                      if ((g_ipv4cfg.proto & IPv4PROTO_FALLBACK) ==
+                          IPv4PROTO_FALLBACK &&
+                          ++dhcp_fail_count > CONFIG_NETINIT_DHCP_FALLBACK)
+                        {
+                          struct in_addr addr;
+                          g_ipv4cfg.proto &= ~IPv4PROTO_DHCP;
+                          addr.s_addr = g_ipv4cfg.ipaddr;
+                          netlib_set_ipv4addr(NET_DEVNAME, &addr);
+                        }
+                    }
+#endif
+                }
+#ifdef CONFIG_FSUTILS_IPCFG
+              else if (abstime.tv_sec > dhcprenew.tv_sec && g_ipv4cfg.proto &
+                  IPv4PROTO_DHCP)
+#else
+              else if (abstime.tv_sec > dhcprenew.tv_sec)
+#endif
+                {
+                  /* Do the renew */
+
+                  ret = netinit_dhcp(&g_ds);
+                  if (ret == OK)
+                    {
+                      /* Yes, set next renewal time */
+
+                      DEBUGVERIFY(clock_gettime(CLOCK_REALTIME, &dhcprenew));
+                      dhcprenew.tv_sec  += g_ds.lease_time / 2;
+                    }
+#if defined(USE_DHCP_FALLBACK)
+                  else if (ret == -EAGAIN)
+                    {
+                      if ((g_ipv4cfg.proto & IPv4PROTO_FALLBACK) ==
+                          IPv4PROTO_FALLBACK &&
+                          ++dhcp_fail_count > CONFIG_NETINIT_DHCP_FALLBACK)
+                        {
+                          struct in_addr addr;
+                          g_ipv4cfg.proto &= ~IPv4PROTO_DHCP;
+                          addr.s_addr = g_ipv4cfg.ipaddr;
+                          netlib_set_ipv4addr(NET_DEVNAME, &addr);
+                        }
+                    }
+#endif
+                }
+
+#endif
               reltime.tv_sec  = LONG_TIME_SEC;
               reltime.tv_nsec = 0;
             }
@@ -918,6 +1102,13 @@ static int netinit_monitor(void)
                 }
             }
 
+#ifdef CONFIG_NETUTILS_DHCPC
+          /* Link went down, next up could be a different network,
+           * so force a renew, on the next up.
+           */
+
+          dhcprenew.tv_sec = 0;
+#endif
           /* In either case, wait for the short, configurable delay */
 
           reltime.tv_sec  = CONFIG_NETINIT_RETRYMSEC / 1000;
@@ -946,11 +1137,13 @@ static int netinit_monitor(void)
   /* TODO: Stop the PHY notifications and remove the signal handler. */
 
 errout_with_notification:
+#if !defined(CONFIG_ARCH_PHY_POLLED)
   ifr.ifr_mii_notify_event.sigev_notify = SIGEV_NONE;
   ioctl(sd, SIOCMIINOTIFY, (unsigned long)&ifr);
 errout_with_sigaction:
   sigaction(CONFIG_NETINIT_SIGNO, &oact, NULL);
 errout_with_socket:
+#endif
   close(sd);
 errout:
   nerr("ERROR: Aborting\n");
