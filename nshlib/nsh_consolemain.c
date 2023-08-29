@@ -70,6 +70,10 @@ int nsh_consolemain(int argc, FAR char *argv[])
   int ret;
 
   DEBUGASSERT(pstate != NULL);
+  if (pstate == NULL)
+    {
+      return -ENOMEM;
+    }
 
 #ifdef CONFIG_NSH_USBDEV_TRACE
   /* Initialize any USB tracing options that were requested */
