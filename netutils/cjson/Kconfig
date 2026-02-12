@@ -14,7 +14,7 @@ if NETUTILS_CJSON
 
 config NETUTILS_CJSON_URL
 	string "URL where cJSON library can be downloaded"
-	default "https://github.com/DaveGamble/cJSON/archive"
+	default "https://github.com/DaveGamble/cJSON/archive/refs/tags"
 
 config NETUTILS_CJSON_VERSION
 	string "Version number"
